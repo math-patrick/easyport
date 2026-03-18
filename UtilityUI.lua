@@ -40,13 +40,49 @@ local searchBox
 local scrollFrame
 local dataCache = {}
 local IsHearthstoneEntry
+local IsUsableUtility
+local ApplySelectedTabVisual
 local EnsureFrame
 local tabButtons = {}
 local tabIndexById = {}
 local tabOrder = {TAB_CURRENT_DUNGEONS, TAB_LEGACY_DUNGEONS, TAB_TELEPORTS, TAB_UTILITY, TAB_HEARTHSTONE}
+local showAllEntriesToggle
+
+local SHOW_ALL_ENTRIES_DB_KEY = "showAllEntriesInUtilityUI"
+local SHOW_ALL_TOYS_LEGACY_DB_KEY = "showAllToysInUtilityUI"
+local WOWHEAD_POPUP_KEY = "NOZMIE_WOWHEAD_LINK"
+local wowheadPopupRegistered = false
+local pendingWowheadURL = nil
 
 local function IsCombatLocked()
     return InCombatLockdown and InCombatLockdown()
+end
+
+local function GetShowAllEntriesEnabled()
+    if type(NozmieDB) ~= "table" then
+        return false
+    end
+    if NozmieDB[SHOW_ALL_ENTRIES_DB_KEY] ~= nil then
+        return NozmieDB[SHOW_ALL_ENTRIES_DB_KEY] == true
+    end
+    return NozmieDB[SHOW_ALL_TOYS_LEGACY_DB_KEY] == true
+end
+
+local function SetShowAllEntriesEnabled(enabled)
+    if type(NozmieDB) ~= "table" then
+        NozmieDB = {}
+    end
+    NozmieDB[SHOW_ALL_ENTRIES_DB_KEY] = enabled == true
+    NozmieDB[SHOW_ALL_TOYS_LEGACY_DB_KEY] = enabled == true
+end
+
+local function UrlEncode(str)
+    str = tostring(str or "")
+    str = str:gsub("\n", " ")
+    str = str:gsub("([^%w%-_%.~ ])", function(char)
+        return string.format("%%%02X", string.byte(char))
+    end)
+    return str:gsub(" ", "+")
 end
 
 local function ApplyUtilityButtonCombatState(button)
@@ -79,12 +115,122 @@ local function IsUtilityEntry(item)
     return item and (item.category == "Utility" or item.category == "Class Utility") and not item.easterEgg
 end
 
+local function IsUnavailableEntry(item)
+    return not IsUsableUtility(item)
+end
+
+local function GetWowheadURL(item)
+    if not item then
+        return nil
+    end
+
+    if item.itemID then
+        return "https://www.wowhead.com/item=" .. tostring(item.itemID)
+    end
+    if item.spellID then
+        return "https://www.wowhead.com/spell=" .. tostring(item.spellID)
+    end
+
+    local searchText = item.spellName or item.name or item.destination
+    if searchText and searchText ~= "" then
+        return "https://www.wowhead.com/search?q=" .. UrlEncode(searchText)
+    end
+
+    return nil
+end
+
+local function EnsureWowheadPopupRegistered()
+    if wowheadPopupRegistered then
+        return
+    end
+
+    StaticPopupDialogs[WOWHEAD_POPUP_KEY] = {
+        text = Lstr("utility.entry.wowhead.popup.title",
+            "This entry is not available to use right now. Copy this Wowhead link to see details:"),
+        button1 = Lstr("utility.entry.wowhead.popup.close", "Close"),
+        hasEditBox = true,
+        editBoxWidth = 360,
+        timeout = 0,
+        whileDead = true,
+        hideOnEscape = true,
+        preferredIndex = 3,
+        OnShow = function(self)
+            local editBox = self.editBox or self:GetEditBox()
+            editBox:SetText(pendingWowheadURL or "")
+            editBox:SetAutoFocus(true)
+            editBox:HighlightText()
+        end,
+        OnAccept = function(self)
+            local editBox = self.editBox or self:GetEditBox()
+            editBox:SetText("")
+        end,
+        OnHide = function(self)
+            local editBox = self.editBox or self:GetEditBox()
+            editBox:SetText("")
+        end
+    }
+
+    wowheadPopupRegistered = true
+end
+
+local function OpenWowheadForEntry(item)
+    local url = GetWowheadURL(item)
+    if not url then
+        return
+    end
+
+    EnsureWowheadPopupRegistered()
+    pendingWowheadURL = url
+    StaticPopup_Show(WOWHEAD_POPUP_KEY)
+end
+
 local function IsTeleportEntry(item)
     if not item then
         return false
     end
     return item.category == "M+ Dungeon" or item.category == "Raid" or item.category == "Delve" or item.category ==
                "Toy"
+end
+
+local function IsCurrentDungeonEntry(item)
+    return item and tonumber(item.current) == 1
+end
+
+local function IsRandomHearthstoneEntry(item)
+    if not item then
+        return false
+    end
+    return item.actionType == "random_hearthstone" or item.name == "Random Hearthstone"
+end
+
+local function IsLegacyEntry(item)
+    if not item then
+        return false
+    end
+    if item.legacy == true then
+        return true
+    end
+    return tonumber(item.legacy) == 1
+end
+
+local function ShouldShowUnavailableEntry(item)
+    if not item then
+        return false
+    end
+
+    if item.category == "Class Utility" or item.category == "Class" or IsLegacyEntry(item) then
+        return false
+    end
+
+    if item.category == "Raid" then
+        return false
+    end
+
+    if item.category == "M+ Dungeon" and not IsCurrentDungeonEntry(item) then
+        return false
+    end
+
+    return true
 end
 
 local function MatchesFilter(item)
@@ -120,9 +266,9 @@ local function ItemMatchesTab(item, tabId)
     end
 
     if tabId == TAB_CURRENT_DUNGEONS then
-        return item.category == "M+ Dungeon" and item.priority and tonumber(item.priority) == 1
+        return tonumber(item.current) == 1
     elseif tabId == TAB_LEGACY_DUNGEONS then
-        return item.category == "M+ Dungeon" and (not item.priority or tonumber(item.priority) ~= 1)
+        return item.category == "M+ Dungeon" and tonumber(item.current) ~= 1
     elseif tabId == TAB_TELEPORTS then
         return IsTeleportEntry(item) and item.category ~= "M+ Dungeon" and not IsHearthstoneEntry(item)
     elseif tabId == TAB_UTILITY then
@@ -234,6 +380,14 @@ local function EnsureButton(index)
     end
     button:EnableMouse(true)
     button:RegisterForClicks("AnyUp", "AnyDown")
+    if not button.nozmieUnavailableHooked then
+        button:HookScript("PostClick", function(self, mouseButton)
+            if self.nozmieUnavailable and mouseButton == "LeftButton" then
+                OpenWowheadForEntry(self.nozmieUnavailableData)
+            end
+        end)
+        button.nozmieUnavailableHooked = true
+    end
     buttons[index] = button
     return button
 end
@@ -257,13 +411,11 @@ function UtilityUI.Hide()
     end
 end
 
-local function IsUsableUtility(item)
+IsUsableUtility = function(item)
     if Helpers and Helpers.CanPlayerUseUtility then
         return Helpers.CanPlayerUseUtility(item)
     end
     if item.itemID then
-        if PlayerHasToy and PlayerHasToy(item.itemID) then
-        end
         if C_Item and C_Item.GetItemCount then
             return C_Item.GetItemCount(item.itemID, true, false, false) > 0
         end
@@ -276,17 +428,32 @@ local function IsUsableUtility(item)
 end
 
 local function BuildDataCache()
+    local showAllEntries = GetShowAllEntriesEnabled()
+
     dataCache = {}
     if not _G.Nozmie_Data then
         return
     end
     for _, item in ipairs(_G.Nozmie_Data) do
-        if (IsUtilityEntry(item) or IsTeleportEntry(item) or IsHearthstoneEntry(item)) and IsUsableUtility(item) then
+        local isUsable = IsUsableUtility(item)
+        if (IsUtilityEntry(item) or IsTeleportEntry(item) or IsHearthstoneEntry(item)) and
+            (isUsable or (showAllEntries and not isUsable and ShouldShowUnavailableEntry(item))) then
             table.insert(dataCache, item)
         end
     end
-    -- Sort by name
+
     table.sort(dataCache, function(a, b)
+        local aRandom = IsRandomHearthstoneEntry(a)
+        local bRandom = IsRandomHearthstoneEntry(b)
+        if aRandom ~= bRandom then
+            return aRandom
+        end
+
+        local aUnavailable = IsUnavailableEntry(a)
+        local bUnavailable = IsUnavailableEntry(b)
+        if aUnavailable ~= bUnavailable then
+            return not aUnavailable
+        end
         return ConfigHelpers.GetEntryName(a) < ConfigHelpers.GetEntryName(b)
     end)
 end
@@ -342,6 +509,47 @@ local function ApplyActionAttributes(button, item)
     end
 end
 
+local function ClearButtonActions(button)
+    if ClickBehavior and ClickBehavior.ClearActionAttributes then
+        ClickBehavior.ClearActionAttributes(button)
+    else
+        button:SetScript("PreClick", nil)
+        button:SetAttribute("type", nil)
+        button:SetAttribute("type1", nil)
+        button:SetAttribute("type2", nil)
+        button:SetAttribute("macrotext", nil)
+        button:SetAttribute("macrotext1", nil)
+        button:SetAttribute("macrotext2", nil)
+        button:SetAttribute("spell", nil)
+        button:SetAttribute("spell1", nil)
+        button:SetAttribute("spell2", nil)
+        button:SetAttribute("item", nil)
+        button:SetAttribute("item1", nil)
+        button:SetAttribute("item2", nil)
+    end
+end
+
+local function ConfigureUnavailableButton(button, item)
+    ClearButtonActions(button)
+    button.data = nil
+    button.activeData = nil
+    button.options = nil
+    button.currentIndex = nil
+    button.nozmieClickBehaviorOptions = nil
+end
+
+local function ConfigureOwnedButton(button, item)
+    ApplyActionAttributes(button, item)
+    if ClickBehavior and ClickBehavior.Apply then
+        button.data = item
+        ClickBehavior.Apply(button, {
+            closeOnRight = false,
+            closeOnLeft = false,
+            cancelAutoHide = false
+        })
+    end
+end
+
 local function LayoutButtons()
     if not content or not scrollFrame then
         return
@@ -364,7 +572,12 @@ local function LayoutButtons()
     for index, entry in ipairs(filteredData) do
         local button = EnsureButton(index)
         local data = entry
-        button.data = data
+        local isUnavailable = IsUnavailableEntry(data)
+
+        -- Tooltip state should always be available, including while in combat.
+        button.nozmieTooltipData = data
+        button.nozmieUnavailable = isUnavailable
+        button.nozmieUnavailableData = isUnavailable and data or nil
 
         -- Configure button
         button:SetAlpha(1)
@@ -387,22 +600,36 @@ local function LayoutButtons()
         else
             button.name:SetText(ConfigHelpers.GetEntryName(data))
         end
-        button.category:SetText(GetEntryDescription(data))
+
+        if isUnavailable then
+            button.name:SetTextColor(0.78, 0.78, 0.78)
+            button.category:SetTextColor(1, 0.82, 0.35)
+            button.category:SetText(Lstr("utility.entry.unavailable.hint", "Unavailable - click to copy Wowhead link"))
+        else
+            button.name:SetTextColor(1, 1, 1)
+            button.category:SetTextColor(0.7, 0.7, 0.7)
+            button.category:SetText(GetEntryDescription(data))
+        end
+
         if IconHandling and IconHandling.ApplyIcon then
             IconHandling.ApplyIcon(button.icon, data)
         else
             button.icon:SetTexture(ConfigHelpers.GetIconForEntry(data))
         end
 
+        if button.icon and button.icon.SetDesaturated then
+            button.icon:SetDesaturated(isUnavailable)
+        end
+        button.icon:SetAlpha(isUnavailable and 0.75 or 1)
+        if isUnavailable then
+            button:SetAlpha(0.92)
+        end
+
         if not IsCombatLocked() then
-            ApplyActionAttributes(button, data)
-            if ClickBehavior and ClickBehavior.Apply then
-                button.data = data
-                ClickBehavior.Apply(button, {
-                    closeOnRight = false,
-                    closeOnLeft = false,
-                    cancelAutoHide = false
-                })
+            if isUnavailable then
+                ConfigureUnavailableButton(button, data)
+            else
+                ConfigureOwnedButton(button, data)
             end
         end
 
@@ -415,7 +642,7 @@ local function LayoutButtons()
 
         if button.hotkey then
             local key, btnName = nil, button:GetName()
-            if btnName then
+            if not isUnavailable and btnName then
                 if data.itemID then
                     key = GetBindingKey("CLICK " .. btnName .. ":LeftButton")
                 elseif data.spellID then
@@ -432,8 +659,16 @@ local function LayoutButtons()
         end
 
         -- Cooldown logic
-        if IconHandling and IconHandling.ApplyCooldownVisual then
+        if not isUnavailable and IconHandling and IconHandling.ApplyCooldownVisual then
+            button.data = data
             IconHandling.ApplyCooldownVisual(button.icon, button.cooldown, button.cooldownText, data)
+        elseif button.cooldown then
+            button.data = nil
+            button.cooldown:Hide()
+            if button.cooldownText then
+                button.cooldownText:SetText("")
+                button.cooldownText:Hide()
+            end
         end
         local x = col * (width / columns)
         local y = row * (ROW_HEIGHT + GRID_PADDING)
@@ -459,6 +694,46 @@ local function RefreshLayout()
     end
     BuildFilteredData()
     LayoutButtons()
+    if frame then
+        ApplySelectedTabVisual(frame)
+    end
+end
+
+ApplySelectedTabVisual = function(parent)
+    if not parent then
+        return
+    end
+
+    if not tabIndexById[selectedTab] then
+        selectedTab = GetFirstVisibleTabId() or TAB_CURRENT_DUNGEONS
+    end
+
+    if PanelTemplates_SetTab then
+        PanelTemplates_SetTab(parent, tabIndexById[selectedTab] or 1)
+        return
+    end
+
+    local activeTab = tabButtons[selectedTab]
+    for _, tabId in ipairs(tabOrder) do
+        local tab = tabButtons[tabId]
+        if tab then
+            if tab == activeTab then
+                if tab.GetFontString then
+                    tab:GetFontString():SetTextColor(1, 0.82, 0)
+                end
+                if tab.SetButtonState then
+                    tab:SetButtonState("PUSHED", true)
+                end
+            else
+                if tab.GetFontString then
+                    tab:GetFontString():SetTextColor(0.7, 0.7, 0.7)
+                end
+                if tab.SetButtonState then
+                    tab:SetButtonState("NORMAL", false)
+                end
+            end
+        end
+    end
 end
 
 local function UpdateCooldowns()
@@ -472,54 +747,17 @@ local function UpdateCooldowns()
     end
 end
 
-local function UpdateTabSelection(value, currentDungeonsTab, legacyDungeonsTab, teleportsTab, utilityTab, hearthTab)
-    UpdateTabVisibility(currentDungeonsTab:GetParent())
+local function UpdateTabSelection(value, parent)
+    UpdateTabVisibility(parent)
     if not tabIndexById[value] then
         value = GetFirstVisibleTabId() or TAB_CURRENT_DUNGEONS
     end
     selectedTab = value or TAB_CURRENT_DUNGEONS
     RefreshLayout()
-    if PanelTemplates_SetTab then
-        local tabIdx = tabIndexById[value] or 1
-        PanelTemplates_SetTab(currentDungeonsTab:GetParent(), tabIdx)
-    else
-        local allTabs = {currentDungeonsTab, legacyDungeonsTab, teleportsTab, utilityTab, hearthTab}
-        local activeTab
-
-        if value == TAB_CURRENT_DUNGEONS then
-            activeTab = currentDungeonsTab
-        elseif value == TAB_LEGACY_DUNGEONS then
-            activeTab = legacyDungeonsTab
-        elseif value == TAB_TELEPORTS then
-            activeTab = teleportsTab
-        elseif value == TAB_UTILITY then
-            activeTab = utilityTab
-        elseif value == TAB_HEARTHSTONE then
-            activeTab = hearthTab
-        end
-
-        for _, tab in ipairs(allTabs) do
-            if tab == activeTab then
-                if tab and tab.GetFontString then
-                    tab:GetFontString():SetTextColor(1, 0.82, 0)
-                end
-                if tab and tab.SetButtonState then
-                    tab:SetButtonState("PUSHED", true)
-                end
-            else
-                if tab and tab.GetFontString then
-                    tab:GetFontString():SetTextColor(0.7, 0.7, 0.7)
-                end
-                if tab and tab.SetButtonState then
-                    tab:SetButtonState("NORMAL", false)
-                end
-            end
-        end
-    end
-    RefreshLayout()
+    ApplySelectedTabVisual(parent)
 end
 
-local function CreateTabButtons(parent, anchor)
+local function CreateTabButtons(parent)
     local currentDungeonsTab = CreateFrame("Button", "$parentTab1", parent, "PanelTabButtonTemplate")
     local legacyDungeonsTab = CreateFrame("Button", "$parentTab2", parent, "PanelTabButtonTemplate")
     local teleportsTab = CreateFrame("Button", "$parentTab3", parent, "PanelTabButtonTemplate")
@@ -532,35 +770,33 @@ local function CreateTabButtons(parent, anchor)
     tabButtons[TAB_UTILITY] = utilityTab
     tabButtons[TAB_HEARTHSTONE] = hearthTab
 
-    currentDungeonsTab:SetText(Lstr("utility.tab.currentdungeons", "Current"))
+    currentDungeonsTab:SetText(Lstr("utility.tab.currentdungeons", "Midnight"))
     currentDungeonsTab:SetScript("OnClick", function()
-        UpdateTabSelection(TAB_CURRENT_DUNGEONS, currentDungeonsTab, legacyDungeonsTab, teleportsTab, utilityTab,
-            hearthTab)
+        UpdateTabSelection(TAB_CURRENT_DUNGEONS, parent)
     end)
 
     legacyDungeonsTab:SetText(Lstr("utility.tab.legacydungeons", "Legacy"))
     legacyDungeonsTab:SetScript("OnClick", function()
-        UpdateTabSelection(TAB_LEGACY_DUNGEONS, currentDungeonsTab, legacyDungeonsTab, teleportsTab, utilityTab,
-            hearthTab)
+        UpdateTabSelection(TAB_LEGACY_DUNGEONS, parent)
     end)
 
     teleportsTab:SetText(Lstr("utility.tab.teleports", "Teleports"))
     teleportsTab:SetScript("OnClick", function()
-        UpdateTabSelection(TAB_TELEPORTS, currentDungeonsTab, legacyDungeonsTab, teleportsTab, utilityTab, hearthTab)
+        UpdateTabSelection(TAB_TELEPORTS, parent)
     end)
 
     utilityTab:SetText(Lstr("utility.tab.utility", "Utility"))
     utilityTab:SetScript("OnClick", function()
-        UpdateTabSelection(TAB_UTILITY, currentDungeonsTab, legacyDungeonsTab, teleportsTab, utilityTab, hearthTab)
+        UpdateTabSelection(TAB_UTILITY, parent)
     end)
 
     hearthTab:SetText(Lstr("utility.tab.hearthstone", "Hearthstones"))
     hearthTab:SetScript("OnClick", function()
-        UpdateTabSelection(TAB_HEARTHSTONE, currentDungeonsTab, legacyDungeonsTab, teleportsTab, utilityTab, hearthTab)
+        UpdateTabSelection(TAB_HEARTHSTONE, parent)
     end)
 
     UpdateTabVisibility(parent)
-    UpdateTabSelection(selectedTab, currentDungeonsTab, legacyDungeonsTab, teleportsTab, utilityTab, hearthTab)
+    UpdateTabSelection(selectedTab, parent)
 end
 
 EnsureFrame = function()
@@ -633,7 +869,32 @@ EnsureFrame = function()
         searchBox.Instructions:Show()
     end
 
-    CreateTabButtons(frame, searchBox)
+    showAllEntriesToggle = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
+    showAllEntriesToggle:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 12, 4)
+    showAllEntriesToggle:SetScript("OnClick", function(self)
+        SetShowAllEntriesEnabled(self:GetChecked())
+        BuildDataCache()
+        RefreshLayout()
+    end)
+
+    showAllEntriesToggle.label = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    showAllEntriesToggle.label:SetPoint("LEFT", showAllEntriesToggle, "RIGHT", -2, 0)
+    showAllEntriesToggle.label:SetText(Lstr("utility.showAllEntries.toggle", "Show all entries"))
+    showAllEntriesToggle.label:SetTextColor(0.9, 0.9, 0.9)
+
+    showAllEntriesToggle:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText(Lstr("utility.showAllEntries.tooltip", "Show entries you cannot use right now."), 1, 1, 1)
+        GameTooltip:AddLine(Lstr("utility.showAllEntries.tooltip.detail",
+            "Unavailable entries are dimmed, listed last, and copy a Wowhead link when clicked."), 0.85, 0.85, 0.85,
+            true)
+        GameTooltip:Show()
+    end)
+    showAllEntriesToggle:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+
+    CreateTabButtons(frame)
 
     scrollFrame = CreateFrame("ScrollFrame", nil, frame.Inset, "UIPanelScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", 6, -6)
@@ -649,6 +910,9 @@ EnsureFrame = function()
     end)
 
     frame:SetScript("OnShow", function()
+        if showAllEntriesToggle then
+            showAllEntriesToggle:SetChecked(GetShowAllEntriesEnabled())
+        end
         BuildDataCache()
         RefreshLayout()
         RefreshCombatButtonState()
@@ -664,8 +928,24 @@ EnsureFrame = function()
 
     frame:RegisterEvent("PLAYER_REGEN_DISABLED")
     frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    frame:RegisterEvent("NEW_TOY_ADDED")
+    frame:RegisterEvent("TOYS_UPDATED")
     frame:SetScript("OnEvent", function(self, event)
-        RefreshCombatButtonState()
+        if event == "PLAYER_REGEN_DISABLED" then
+            RefreshCombatButtonState()
+            return
+        end
+
+        if event == "PLAYER_REGEN_ENABLED" then
+            RefreshLayout()
+            RefreshCombatButtonState()
+            return
+        end
+
+        if event == "NEW_TOY_ADDED" or event == "TOYS_UPDATED" then
+            BuildDataCache()
+            RefreshLayout()
+        end
     end)
 
     if type(UISpecialFrames) == "table" then
@@ -679,14 +959,4 @@ end
 SLASH_NOZUI1 = "/nozui"
 SlashCmdList["NOZUI"] = function()
     UtilityUI.Show()
-end
-
-function UtilityUI.Show()
-    EnsureFrame():Show()
-end
-
-function UtilityUI.Hide()
-    if frame then
-        frame:Hide()
-    end
 end

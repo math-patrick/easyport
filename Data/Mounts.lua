@@ -41,7 +41,8 @@ Mounts = {{
     category = "Utility",
     cooldown = "No CD",
     destination = "Auction House & Repair",
-    keywords = {"brutosaur", "bruto", "auction", "ah", "longboy", "vendor"}
+    keywords = {"brutosaur", "bruto", "auction", "ah", "longboy", "vendor"},
+    legacy = 1
 }, {
     name = "Trader's Gilded Brutosaur",
     itemID = 229418,

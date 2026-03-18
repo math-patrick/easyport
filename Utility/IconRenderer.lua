@@ -35,29 +35,42 @@ end
 
 function IconRenderer.ApplyTooltip(iconFrame)
     iconFrame:EnableMouse(true)
-    
+    if iconFrame.nozmieTooltipHooked then
+        return
+    end
+
     iconFrame:SetScript("OnEnter", function(self)
         local parent = self:GetParent()
-        local data = parent.activeData or parent.data or self.data
-        if not data then return end
-        
+        local data = parent.nozmieTooltipData or parent.activeData or parent.data or parent.nozmieUnavailableData or
+                         self.data
+        if not data then
+            return
+        end
+
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        local shown = false
         if data.preferItem and data.itemID then
-            GameTooltip:SetItemByID(data.itemID)
+            shown = GameTooltip:SetItemByID(data.itemID)
         elseif data.spellID then
-            GameTooltip:SetSpellByID(data.spellID)
+            shown = GameTooltip:SetSpellByID(data.spellID)
         elseif data.itemID then
             if data.actionType == "toy" then
-                GameTooltip:SetToyByItemID(data.itemID)
+                shown = GameTooltip:SetToyByItemID(data.itemID)
             else
-                GameTooltip:SetItemByID(data.itemID)
+                shown = GameTooltip:SetItemByID(data.itemID)
             end
-        else
+        end
+
+        if not shown then
             GameTooltip:SetText(data.spellName or data.name or Lstr("minimap.title", "Nozmie"))
+            if data.destination then
+                GameTooltip:AddLine(data.destination, 0.8, 0.8, 0.8)
+            end
         end
         GameTooltip:Show()
     end)
-    
+    iconFrame.nozmieTooltipHooked = true
+
     iconFrame:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)

@@ -10,7 +10,7 @@ ServiceToys = { {
     requiredProfession = { name = "Engineering" }
 }, {
     name = "Auto-Hammer",
-    itemID = 23767,
+    itemID = 132514,
     spellName = "Auto-Hammer",
     actionType = "item",
     category = "Utility",
@@ -113,16 +113,6 @@ ServiceToys = { {
     keywords = { "blingtron", "bling", "blingtron 7000", "7000" },
     requiredProfession = { name = "Engineering" }
 }, {
-    name = "Blingtron 6000",
-    itemID = 132892,
-    spellName = "Blingtron 6000",
-    actionType = "toy",
-    category = "Utility",
-    cooldown = "4 hours",
-    destination = "Blingtron 6000",
-    keywords = { "blingtron", "bling", "blingtron 6000", "6000" },
-    requiredProfession = { name = "Engineering" }
-}, {
     name = "Blingtron 5000",
     itemID = 87214,
     spellName = "Blingtron 5000",
@@ -146,20 +136,11 @@ ServiceToys = { {
     name = "Thermal Anvil",
     itemID = 87216,
     spellName = "Thermal Anvil",
-    actionType = "toy",
+    actionType = "item",
     category = "Utility",
     cooldown = "15 min",
     destination = "Anvil",
     keywords = { "anvil", "thermal", "blacksmith", "forge" }
-}, {
-    name = "Argent Squire",
-    itemID = 67414,
-    spellName = "Argent Squire",
-    actionType = "toy",
-    category = "Utility",
-    cooldown = "8 hours",
-    destination = "Bank & Vendor",
-    keywords = { "argent", "squire", "bank", "vendor", "mailbox", "mail" }
 }, {
     name = "Deployable Attire Rearranger",
     itemID = 153597,
@@ -170,41 +151,14 @@ ServiceToys = { {
     destination = "Transmogrifier",
     keywords = { "transmog", "attire", "rearranger", "mog", "xmog" }
 }, {
-    name = "Mobile Banking",
-    itemID = 183795,
-    spellName = "Mobile Banking",
-    actionType = "toy",
-    category = "Utility",
-    cooldown = "4 hours",
-    destination = "Guild Bank",
-    keywords = { "guild", "bank", "mobile", "banking" }
-}, {
     name = "Interdimensional Companion Repository",
     itemID = 153510,
     spellName = "Interdimensional Companion Repository",
-    actionType = "toy",
+    actionType = "item",
     category = "Utility",
     cooldown = "5 min",
     destination = "Stable Master",
     keywords = { "stable" }
-}, {
-    name = "Pierre",
-    itemID = 94903,
-    spellName = "Pierre",
-    actionType = "toy",
-    category = "Utility",
-    cooldown = "10 min",
-    destination = "Cooking Fire",
-    keywords = { "cooking", "pierre", "cooking" }
-}, {
-    name = "Lil' Ragnaros",
-    itemID = 101771,
-    spellName = "Lil' Ragnaros",
-    actionType = "toy",
-    category = "Utility",
-    cooldown = "5 min",
-    destination = "Cooking Fire",
-    keywords = { "cooking", "ragnaros", "lil ragnaros" }
 }, {
     name = "Little Wickerman",
     itemID = 70722,
@@ -294,7 +248,8 @@ ServiceToys = { {
     category = "Utility",
     cooldown = "No CD",
     destination = "Mailbox",
-    keywords = { "cantrips", "mail", "mailbox", "nightborne" }
+    keywords = { "mail", "mailbox"},
+    legacy = 1
 }, {
     name = "Pack Hobgoblin",
     spellID = 69046,
@@ -303,5 +258,6 @@ ServiceToys = { {
     category = "Utility",
     cooldown = "10 min",
     destination = "Bank",
-    keywords = { "hobgoblin", "pack", "bank", "goblin" }
+    keywords = { "bank" },
+    legacy = 1
 }}

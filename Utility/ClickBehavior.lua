@@ -68,6 +68,20 @@ function ClickBehavior.ApplyActionAttributes(frame, data)
         return
     end
 
+    if data.actionType == "random_hearthstone" then
+        frame:SetScript("PreClick", function(self)
+            local macro = "/use item:6948"
+            if Helpers and Helpers.GetRandomHearthstoneMacro then
+                macro = Helpers.GetRandomHearthstoneMacro() or macro
+            end
+            self:SetAttribute("type", "macro")
+            self:SetAttribute("type1", "macro")
+            self:SetAttribute("macrotext", macro)
+            self:SetAttribute("macrotext1", macro)
+        end)
+        return
+    end
+
     if data.actionType == "spell" and data.spellID then
         local spellName = data.spellName or (data.spellID and GetSpellInfo(data.spellID))
         if data.targetPlayer and data.targetPlayer ~= UnitName("player") and data.category and data.category:find("Utility") then

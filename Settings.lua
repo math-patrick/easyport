@@ -134,7 +134,9 @@ function SettingsModule.InitializeDB()
         suppressInstanceTransmog = false,
         suppressInstanceHearthstone = false,
         blacklistedWords = "",
-        announceToGroup = false
+        announceToGroup = false,
+        showAllEntriesInUtilityUI = false,
+        showAllToysInUtilityUI = false
     }
 
     -- Apply defaults for any missing settings

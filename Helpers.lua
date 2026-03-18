@@ -268,24 +268,60 @@ local function CanUseItem(data)
 end
 
 local function CanUseMount(data)
-    if IsIndoors and IsIndoors() then
-        return false
-    end
-
     local mountID = data.mountId or
                         (C_MountJournal and C_MountJournal.GetMountFromItem and
                             C_MountJournal.GetMountFromItem(data.itemID))
 
-    if not mountID then
+    if not mountID or not C_MountJournal or not C_MountJournal.GetMountInfoByID then
         return false
     end
 
-    local _, _, _, _, isUsable = C_MountJournal.GetMountInfoByID(mountID)
-    return isUsable
+    local _, _, _, _, isUsable, _, _, _, _, _, isCollected = C_MountJournal.GetMountInfoByID(mountID)
+
+    -- Treat mounts as available when owned/collected, even if temporarily unusable
+    -- (indoors, restricted zone, shapeshift/form restrictions, etc.).
+    if isCollected ~= nil then
+        return isCollected == true
+    end
+
+    return isUsable == true
 end
 
 local function CanUseToy(data)
     return (type(PlayerHasToy) == "function" and PlayerHasToy(data.itemID))
+end
+
+local function CanUseRandomHearthstone()
+    local entries = _G.Hearthstones
+    if type(entries) == "table" and type(PlayerHasToy) == "function" then
+        for _, entry in ipairs(entries) do
+            if entry and entry.actionType == "toy" and entry.category == "Home" and entry.itemID and PlayerHasToy(entry.itemID) then
+                return true
+            end
+        end
+    end
+
+    return GetItemCount and GetItemCount(6948, false, false) > 0
+end
+
+function Helpers.GetRandomHearthstoneMacro()
+    local entries = _G.Hearthstones
+    local candidates = {}
+
+    if type(entries) == "table" and type(PlayerHasToy) == "function" then
+        for _, entry in ipairs(entries) do
+            if entry and entry.actionType == "toy" and entry.category == "Home" and entry.itemID and PlayerHasToy(entry.itemID) then
+                table.insert(candidates, entry.itemID)
+            end
+        end
+    end
+
+    if #candidates == 0 then
+        return "/use item:6948"
+    end
+
+    local index = math.random(1, #candidates)
+    return "/use item:" .. tostring(candidates[index])
 end
 
 local function CanUseSpell(data)
@@ -326,6 +362,8 @@ function Helpers.CanPlayerUseUtility(data)
         return CanUseMount(data)
     elseif data.actionType == "toy" then
         return CanUseToy(data)
+    elseif data.actionType == "random_hearthstone" then
+        return CanUseRandomHearthstone()
     elseif data.actionType == "spell" then
         return CanUseSpell(data)
     end

@@ -1,4 +1,14 @@
 Hearthstones = {{
+    name = "Random Hearthstone",
+    itemID = 6948,
+    spellName = "Random Hearthstone",
+    actionType = "random_hearthstone",
+    category = "Home",
+    cooldown = "Varies",
+    destination = "Home",
+    keywords = {"random", "hearthstone", "home", "inn"},
+    current = 1
+}, {
     name = "Hearthstone",
     itemID = 6948,
     spellName = "Hearthstone",

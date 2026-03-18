@@ -1,11 +1,11 @@
 local WotLK = {{
     name = "Pit of Saron",
-    spellID = 999001,
-    spellName = "Path of the Frozen Halls",
+    spellID = 1254555,
+    spellName = "Path of Unyielding Blight",
     actionType = "spell",
     category = "M+ Dungeon",
     keywords = {"pit of saron", "pit", "saron", "cu do sarão"},
-    priority = 1
+    current = 1
 }}
 
 local Cataclysm = {{
@@ -31,20 +31,145 @@ local Cataclysm = {{
     keywords = {"grim batol", "grim", "batol", "gb"}
 }}
 
-local Pandaria = {
-    -- Todo: Pandaria challenge Teleports
-}
+local Pandaria = {{
+    name = "Gate of the Setting Sun",
+    spellID = 131225,
+    spellName = "Path of the Setting Sun",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"setting sun", "gate of the setting sun", "gss"}
+}, {
+    name = "Mogu'shan Palace",
+    spellID = 131222,
+    spellName = "Path of the Mogu King",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"mogushan", "mogu'shan", "palace", "msp"}
+}, {
+    name = "Scholomance",
+    spellID = 131232,
+    spellName = "Path of the Necromancer",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"scholo", "scholomance"}
+}, {
+    name = "Shado-Pan Monastery",
+    spellID = 131206,
+    spellName = "Path of the Shado-Pan",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"shado-pan", "shado pan", "spm"}
+}, {
+    name = "Siege of Niuzao Temple",
+    spellID = 131228,
+    spellName = "Path of the Black Ox",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"niuzao", "siege of niuzao", "snt"}
+}, {
+    name = "Stormstout Brewery",
+    spellID = 131205,
+    spellName = "Path of the Stout Brew",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"stormstout", "brewery", "ssb"}
+}, {
+    name = "Temple of the Jade Serpent",
+    spellID = 131204,
+    spellName = "Path of the Jade Serpent",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"jade serpent", "temple", "tjs"}
+}, {
+    name = "Scarlet Halls",
+    spellID = 131231,
+    spellName = "Path of the Scarlet Blade",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"scarlet halls", "halls"}
+}, {
+    name = "Scarlet Monastery",
+    spellID = 131229,
+    spellName = "Path of the Scarlet Mitre",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"scarlet monastery", "monastery"}
+}}
 
 local Draenor = {{
+    name = "Auchindoun",
+    spellID = 159897,
+    spellName = "Path of the Vigilant",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"auchindoun", "vigilant"}
+}, {
+    name = "Bloodmaul Slag Mines",
+    spellID = 159895,
+    spellName = "Path of the Bloodmaul",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"bloodmaul", "slag mines", "bsm"}
+}, {
+    name = "The Everbloom",
+    spellID = 159901,
+    spellName = "Path of the Verdant",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"everbloom"}
+}, {
+    name = "Grimrail Depot",
+    spellID = 159900,
+    spellName = "Path of the Dark Rail",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"grimrail", "depot", "gd"}
+}, {
+    name = "Iron Docks",
+    spellID = 159896,
+    spellName = "Path of the Iron Prow",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"iron docks"}
+}, {
+    name = "Shadowmoon Burial Grounds",
+    spellID = 159899,
+    spellName = "Path of the Crescent Moon",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"shadowmoon", "burial grounds", "sbg"}
+}, {
     name = "Skyreach",
-    spellID = 999002,
-    spellName = "Path of the Arakkoa",
+    spellID = 159898,
+    spellName = "Path of the Skies",
     actionType = "spell",
     category = "M+ Dungeon",
     keywords = {"skyreach", "sky reach"},
-    priority = 1
-} -- Todo: Draenor challenge Teleports
-}
+    current = 1,
+    legacy = 1
+}, {
+    name = "Skyreach",
+    spellID = 1254557,
+    spellName = "Path of the Crowning Pinnacle",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"skyreach", "sky reach"},
+    current = 1
+}, {
+    name = "Upper Blackrock Spire",
+    spellID = 159902,
+    spellName = "Path of the Burning Mountain",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"upper blackrock spire", "ubrs", "blackrock spire"}
+}, {
+    name = "Blackrock Foundry",
+    spellID = 169771,
+    spellName = "Teleport: Blackrock Foundry",
+    actionType = "spell",
+    category = "Raid",
+    keywords = {"blackrock foundry", "brf", "foundry"}
+}}
 
 local Dragonflight = {{
     name = "Uldaman: Legacy of Tyr",
@@ -81,7 +206,7 @@ local Dragonflight = {{
     actionType = "spell",
     category = "M+ Dungeon",
     keywords = {"algethar", "algeth'ar", "academy", "smartfit"},
-    priority = 1
+    current = 1
 }, {
     name = "Neltharus",
     spellID = 393276,
@@ -140,7 +265,7 @@ local Shadowlands = {{
     spellName = "Path of the Sinful Soul",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"halls", "halls of atonement", "hoa", "atonement"},
+    keywords = {"halls", "halls of atonement", "hoa", "atonement"}
 }, {
     name = "Plaguefall",
     spellID = 354463,
@@ -196,7 +321,7 @@ local Shadowlands = {{
     spellName = "Path of the Streetwise Merchant",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"tazavesh", "taza", "veiled market", "streets", "gambit"},
+    keywords = {"tazavesh", "taza", "veiled market", "streets", "gambit"}
 }, -- Raids
 {
     name = "Castle Nathria",
@@ -270,6 +395,20 @@ local BattleForAzeroth = {{
     actionType = "spell",
     category = "M+ Dungeon",
     keywords = {"motherlode", "mother lode", "mld", "azerite"}
+}, {
+    name = "Siege of Boralus",
+    spellID = 445418,
+    spellName = "Path of the Besieged Harbor",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"siege of boralus", "boralus", "sob"}
+}, {
+    name = "Siege of Boralus",
+    spellID = 464256,
+    spellName = "Path of the Besieged Harbor",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"siege of boralus", "boralus", "sob"}
 }}
 
 local Legion = {{
@@ -316,12 +455,12 @@ local Legion = {{
     keywords = {"karazhan"}
 }, {
     name = "Seat of the Triumvirate",
-    spellID = 999003,
-    spellName = "Path of the Void",
+    spellID = 1254551,
+    spellName = "Path of Dark Dereliction",
     actionType = "spell",
     category = "M+ Dungeon",
     keywords = {"seat", "triumvirate", "seat of the triumvirate", "sott"},
-    priority = 1
+    current = 1
 }}
 
 local WarWithin = {{
@@ -330,7 +469,7 @@ local WarWithin = {{
     spellName = "Path of the Ruined City",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"ara-kara", "ara kara", "arakara", "city of echoes", "ara"},
+    keywords = {"ara-kara", "ara kara", "arakara", "city of echoes", "ara"}
 }, {
     name = "City of Threads",
     spellID = 445416,
@@ -351,14 +490,14 @@ local WarWithin = {{
     spellName = "Path of the Arathi Flagship",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"dawnbreaker", "dawn breaker", "arathi flagship", "db"},
+    keywords = {"dawnbreaker", "dawn breaker", "arathi flagship", "db"}
 }, {
     name = "Priory of the Sacred Flame",
     spellID = 445444,
     spellName = "Path of the Light's Reverence",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"priory", "sacred flame", "lights reverence"},
+    keywords = {"priory", "sacred flame", "lights reverence"}
 }, {
     name = "The Rookery",
     spellID = 445443,
@@ -372,14 +511,14 @@ local WarWithin = {{
     spellName = "Path of the Circuit Breaker",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"floodgate", "flood gate", "circuit breaker"},
+    keywords = {"floodgate", "flood gate", "circuit breaker"}
 }, {
     name = "Eco-Dome Al'dani",
     spellID = 1237215,
     spellName = "Path of the Eco-Dome",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"eco-dome", "eco dome", "ecodome", "aldani", "eco dorme"},
+    keywords = {"eco-dome", "eco dome", "ecodome", "aldani", "eco dorme"}
 }, {
     name = "Cinderbrew Meadery",
     spellID = 445440,
@@ -413,36 +552,36 @@ local WarWithin = {{
 
 local Midnight = {{
     name = "Magisters' Terrace",
-    spellID = 999004,
-    spellName = "Path of the Sun's Reach",
+    spellID = 1254572,
+    spellName = "Path of Devoted Magistry",
     actionType = "spell",
     category = "M+ Dungeon",
     keywords = {"magisters", "magister's terrace", "terrace"},
-    priority = 1
+    current = 1
 }, {
-    name = "Maisara Caverns",
-    spellID = 999005,
-    spellName = "Path of the Maisara",
+    name = "Windrunner Spire",
+    spellID = 1254400,
+    spellName = "Path of the Windrunners",
     actionType = "spell",
     category = "M+ Dungeon",
     keywords = {"maisara", "maisara caverns", "caverna da maisa"},
-    priority = 1
+    current = 1
 }, {
     name = "Nexus-Point Xenas",
-    spellID = 999006,
-    spellName = "Path of the Nexus",
+    spellID = 1254563,
+    spellName = "Path of the Fractured Core",
     actionType = "spell",
     category = "M+ Dungeon",
     keywords = {"nexus-point", "xenas", "nexus point xenas", "nexus johnsonn"},
-    priority = 1
+    current = 1
 }, {
-    name = "Windrunner Spire",
-    spellID = 999007,
-    spellName = "Path of the Windrunner",
+    name = "Maisara Caverns",
+    spellID = 1254559,
+    spellName = "Path of Cavernous Depths",
     actionType = "spell",
     category = "M+ Dungeon",
     keywords = {"windrunner", "spire", "windrunner spire"},
-    priority = 1
+    current = 1
 }}
 
 Expansions = {}
