@@ -311,7 +311,7 @@ function Helpers.GetRandomHearthstoneMacro()
     if type(entries) == "table" and type(PlayerHasToy) == "function" then
         for _, entry in ipairs(entries) do
             if entry and entry.actionType == "toy" and entry.category == "Home" and entry.itemID and PlayerHasToy(entry.itemID) then
-                table.insert(candidates, entry.itemID)
+                table.insert(candidates, entry)
             end
         end
     end
@@ -321,7 +321,8 @@ function Helpers.GetRandomHearthstoneMacro()
     end
 
     local index = math.random(1, #candidates)
-    return "/use item:" .. tostring(candidates[index])
+    local choice = candidates[index]
+    return "/use item:" .. tostring(choice.itemID)
 end
 
 local function CanUseSpell(data)
