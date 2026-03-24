@@ -8,7 +8,8 @@ TeleportToys = {{
     destination = "Quel'Thalas",
     keywords = {"quel'thalas", "quelthalas", "eversong", "ghostlands", "isle of quel'danas", "quel'danas", "silvermoon",
                 "voidstorm", "zul'aman", "void storm", "zulaman", "zul aman", "harandar"},
-    current = 1
+    current = 1,
+    requiredProfession = { name = "Engineering" }
 }, {
     name = "Garrison Hearthstone",
     itemID = 110560,

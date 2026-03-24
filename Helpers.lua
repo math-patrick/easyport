@@ -311,13 +311,28 @@ function Helpers.GetRandomHearthstoneMacro()
     if type(entries) == "table" and type(PlayerHasToy) == "function" then
         for _, entry in ipairs(entries) do
             if entry and entry.actionType == "toy" and entry.category == "Home" and entry.itemID and PlayerHasToy(entry.itemID) then
-                table.insert(candidates, entry)
+                -- Only add if not on cooldown
+                if Helpers.GetCooldownRemaining(entry) == 0 then
+                    table.insert(candidates, entry)
+                end
             end
         end
     end
 
+    -- Basic hearthstone
+    if GetItemCount and GetItemCount(6948, false, false) > 0 then
+        local hs = {itemID = 6948}
+        if Helpers.GetCooldownRemaining(hs) == 0 then
+            table.insert(candidates, hs)
+        end
+    end
+
     if #candidates == 0 then
-        return "/use item:6948"
+        -- Optionally, print a message to the user
+        if UIErrorsFrame and type(UIErrorsFrame.AddMessage) == "function" then
+            UIErrorsFrame:AddMessage("No usable hearthstones available!", 1, 0, 0)
+        end
+        return nil
     end
 
     local index = math.random(1, #candidates)

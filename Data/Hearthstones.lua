@@ -191,14 +191,6 @@ Hearthstones = {{
     cooldown = "30 min",
     keywords = {"hearthstone", "hearth", "home", "inn"}
 }, {
-    name = "Draenic Hologem",
-    itemID = 210455,
-    spellName = "Draenic Hologem",
-    actionType = "toy",
-    category = "Home",
-    cooldown = "No CD",
-    keywords = {"hologem", "draenic", "draenei"}
-}, {
     name = "Stone of the Hearth",
     itemID = 212337,
     spellName = "Stone of the Hearth",
@@ -279,12 +271,23 @@ Hearthstones = {{
     category = "Home",
     cooldown = "30 min",
     keywords = {"hearthstone", "hearth", "home", "inn"}
-}, {
-    name = "Naaru's Enfold",
-    itemID = 263489,
-    spellName = "Naaru's Enfold",
-    actionType = "toy",
-    category = "Home",
-    cooldown = "No CD",
-    keywords = {"hearthstone", "hearth", "home", "inn"}
 }}
+
+-- , {
+--     name = "Naaru's Enfold",
+--     itemID = 263489,
+--     spellName = "Naaru's Enfold",
+--     actionType = "toy",
+--     category = "Home",
+--     cooldown = "No CD",
+--     keywords = {"hearthstone", "hearth", "home", "inn"}
+-- }
+--  {
+--     name = "Draenic Hologem",
+--     itemID = 210455,
+--     spellName = "Draenic Hologem",
+--     actionType = "toy",
+--     category = "Home",
+--     cooldown = "No CD",
+--     keywords = {"hologem", "draenic", "draenei"}
+-- },

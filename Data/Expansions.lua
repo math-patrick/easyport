@@ -564,7 +564,7 @@ local Midnight = {{
     spellName = "Path of the Windrunners",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"maisara", "maisara caverns", "caverna da maisa"},
+    keywords = {"windrunner", "spire", "windrunner spire"},
     current = 1
 }, {
     name = "Nexus-Point Xenas",
@@ -580,7 +580,7 @@ local Midnight = {{
     spellName = "Path of Cavernous Depths",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"windrunner", "spire", "windrunner spire"},
+    keywords = {"maisara", "maisara caverns", "caverna da maisa"},
     current = 1
 }}
 

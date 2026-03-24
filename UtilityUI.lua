@@ -45,6 +45,7 @@ local ApplySelectedTabVisual
 local EnsureFrame
 local tabButtons = {}
 local tabIndexById = {}
+local tabHasContentById = {}
 local tabOrder = {TAB_CURRENT_DUNGEONS, TAB_LEGACY_DUNGEONS, TAB_TELEPORTS, TAB_UTILITY, TAB_HEARTHSTONE}
 local showAllEntriesToggle
 
@@ -218,15 +219,7 @@ local function ShouldShowUnavailableEntry(item)
         return false
     end
 
-    if item.category == "Class Utility" or item.category == "Class" or IsLegacyEntry(item) then
-        return false
-    end
-
-    if item.category == "Raid" then
-        return false
-    end
-
-    if item.category == "M+ Dungeon" and not IsCurrentDungeonEntry(item) then
+    if item.category == "Class Utility" or item.category == "Class" then
         return false
     end
 
@@ -268,9 +261,10 @@ local function ItemMatchesTab(item, tabId)
     if tabId == TAB_CURRENT_DUNGEONS then
         return tonumber(item.current) == 1
     elseif tabId == TAB_LEGACY_DUNGEONS then
-        return item.category == "M+ Dungeon" and tonumber(item.current) ~= 1
+        return (item.category == "M+ Dungeon" and tonumber(item.current) ~= 1) or item.category == "Raid"
     elseif tabId == TAB_TELEPORTS then
-        return IsTeleportEntry(item) and item.category ~= "M+ Dungeon" and not IsHearthstoneEntry(item)
+        return IsTeleportEntry(item) and item.category ~= "M+ Dungeon" and item.category ~= "Raid" and
+                   not IsHearthstoneEntry(item)
     elseif tabId == TAB_UTILITY then
         return IsUtilityEntry(item)
     elseif tabId == TAB_HEARTHSTONE then
@@ -294,9 +288,9 @@ local function TabHasContent(tabId)
     return false
 end
 
-local function GetFirstVisibleTabId()
+local function GetFirstEnabledTabId()
     for _, tabId in ipairs(tabOrder) do
-        if tabIndexById[tabId] then
+        if tabHasContentById[tabId] then
             return tabId
         end
     end
@@ -309,37 +303,74 @@ local function UpdateTabVisibility(parent)
     end
 
     local prevTab
-    local visibleCount = 0
+    local tabCount = 0
     tabIndexById = {}
+    tabHasContentById = {}
 
     for _, tabId in ipairs(tabOrder) do
         local tab = tabButtons[tabId]
         if tab then
-            if TabHasContent(tabId) then
-                visibleCount = visibleCount + 1
-                tabIndexById[tabId] = visibleCount
-                tab:SetID(visibleCount)
-                tab:ClearAllPoints()
-                if prevTab then
-                    tab:SetPoint("LEFT", prevTab, "RIGHT", 4, 0)
-                else
-                    tab:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 12, 2)
-                end
-                tab:Show()
-                prevTab = tab
+            tabCount = tabCount + 1
+            tabIndexById[tabId] = tabCount
+            tab:SetID(tabCount)
+
+            local hasContent = TabHasContent(tabId)
+            tabHasContentById[tabId] = hasContent
+            tab.nozmieHasContent = hasContent
+
+            tab:ClearAllPoints()
+            if prevTab then
+                tab:SetPoint("LEFT", prevTab, "RIGHT", 4, 0)
             else
-                tabIndexById[tabId] = nil
-                tab:Hide()
+                tab:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 12, 2)
             end
+
+            tab:Show()
+            tab:SetEnabled(true)
+            tab:EnableMouse(true)
+            prevTab = tab
         end
     end
 
     if PanelTemplates_SetNumTabs then
-        PanelTemplates_SetNumTabs(parent, visibleCount)
+        PanelTemplates_SetNumTabs(parent, tabCount)
     end
 
-    if not tabIndexById[selectedTab] then
-        selectedTab = GetFirstVisibleTabId() or TAB_CURRENT_DUNGEONS
+    if not tabHasContentById[selectedTab] then
+        selectedTab = GetFirstEnabledTabId() or TAB_CURRENT_DUNGEONS
+    end
+end
+
+local function SetTabSelectedState(tab, selected)
+    if not tab then
+        return
+    end
+
+    local hasContent = tab.nozmieHasContent == true
+
+    local fontString = tab.GetFontString and tab:GetFontString()
+    if fontString then
+        if selected then
+            fontString:SetTextColor(1, 0.82, 0)
+        elseif not hasContent then
+            fontString:SetTextColor(0.45, 0.45, 0.45)
+        else
+            fontString:SetTextColor(0.7, 0.7, 0.7)
+        end
+    end
+
+    if PanelTemplates_SelectTab and PanelTemplates_DeselectTab then
+        if selected then
+            PanelTemplates_SelectTab(tab)
+        else
+            PanelTemplates_DeselectTab(tab)
+        end
+    elseif tab.SetButtonState then
+        if selected then
+            tab:SetButtonState("PUSHED", true)
+        else
+            tab:SetButtonState("NORMAL", false)
+        end
     end
 end
 
@@ -704,34 +735,16 @@ ApplySelectedTabVisual = function(parent)
         return
     end
 
-    if not tabIndexById[selectedTab] then
-        selectedTab = GetFirstVisibleTabId() or TAB_CURRENT_DUNGEONS
-    end
-
-    if PanelTemplates_SetTab then
-        PanelTemplates_SetTab(parent, tabIndexById[selectedTab] or 1)
-        return
+    if not tabHasContentById[selectedTab] then
+        selectedTab = GetFirstEnabledTabId() or TAB_CURRENT_DUNGEONS
     end
 
     local activeTab = tabButtons[selectedTab]
     for _, tabId in ipairs(tabOrder) do
         local tab = tabButtons[tabId]
         if tab then
-            if tab == activeTab then
-                if tab.GetFontString then
-                    tab:GetFontString():SetTextColor(1, 0.82, 0)
-                end
-                if tab.SetButtonState then
-                    tab:SetButtonState("PUSHED", true)
-                end
-            else
-                if tab.GetFontString then
-                    tab:GetFontString():SetTextColor(0.7, 0.7, 0.7)
-                end
-                if tab.SetButtonState then
-                    tab:SetButtonState("NORMAL", false)
-                end
-            end
+            local selected = tab == activeTab and tabHasContentById[tabId] == true
+            SetTabSelectedState(tab, selected)
         end
     end
 end
@@ -749,12 +762,33 @@ end
 
 local function UpdateTabSelection(value, parent)
     UpdateTabVisibility(parent)
-    if not tabIndexById[value] then
-        value = GetFirstVisibleTabId() or TAB_CURRENT_DUNGEONS
+    if not tabHasContentById[value] then
+        value = GetFirstEnabledTabId() or TAB_CURRENT_DUNGEONS
     end
     selectedTab = value or TAB_CURRENT_DUNGEONS
     RefreshLayout()
     ApplySelectedTabVisual(parent)
+end
+
+local function AddDisabledTabTooltip(tab, tabId)
+    if not tab then
+        return
+    end
+
+    tab:HookScript("OnEnter", function(self)
+        if tabHasContentById[tabId] then
+            return
+        end
+
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText(Lstr("utility.tab.disabled.tooltip", "No entries available for this character."), 1, 1,
+            1, 1, true)
+        GameTooltip:Show()
+    end)
+
+    tab:HookScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
 end
 
 local function CreateTabButtons(parent)
@@ -772,28 +806,49 @@ local function CreateTabButtons(parent)
 
     currentDungeonsTab:SetText(Lstr("utility.tab.currentdungeons", "Midnight"))
     currentDungeonsTab:SetScript("OnClick", function()
+        if not tabHasContentById[TAB_CURRENT_DUNGEONS] then
+            return
+        end
         UpdateTabSelection(TAB_CURRENT_DUNGEONS, parent)
     end)
 
     legacyDungeonsTab:SetText(Lstr("utility.tab.legacydungeons", "Legacy"))
     legacyDungeonsTab:SetScript("OnClick", function()
+        if not tabHasContentById[TAB_LEGACY_DUNGEONS] then
+            return
+        end
         UpdateTabSelection(TAB_LEGACY_DUNGEONS, parent)
     end)
 
     teleportsTab:SetText(Lstr("utility.tab.teleports", "Teleports"))
     teleportsTab:SetScript("OnClick", function()
+        if not tabHasContentById[TAB_TELEPORTS] then
+            return
+        end
         UpdateTabSelection(TAB_TELEPORTS, parent)
     end)
 
     utilityTab:SetText(Lstr("utility.tab.utility", "Utility"))
     utilityTab:SetScript("OnClick", function()
+        if not tabHasContentById[TAB_UTILITY] then
+            return
+        end
         UpdateTabSelection(TAB_UTILITY, parent)
     end)
 
     hearthTab:SetText(Lstr("utility.tab.hearthstone", "Hearthstones"))
     hearthTab:SetScript("OnClick", function()
+        if not tabHasContentById[TAB_HEARTHSTONE] then
+            return
+        end
         UpdateTabSelection(TAB_HEARTHSTONE, parent)
     end)
+
+    AddDisabledTabTooltip(currentDungeonsTab, TAB_CURRENT_DUNGEONS)
+    AddDisabledTabTooltip(legacyDungeonsTab, TAB_LEGACY_DUNGEONS)
+    AddDisabledTabTooltip(teleportsTab, TAB_TELEPORTS)
+    AddDisabledTabTooltip(utilityTab, TAB_UTILITY)
+    AddDisabledTabTooltip(hearthTab, TAB_HEARTHSTONE)
 
     UpdateTabVisibility(parent)
     UpdateTabSelection(selectedTab, parent)
