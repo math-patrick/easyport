@@ -9,11 +9,12 @@ TeleportToys = {{
     keywords = {"quel'thalas", "quelthalas", "eversong", "ghostlands", "isle of quel'danas", "quel'danas", "silvermoon",
                 "voidstorm", "zul'aman", "void storm", "zulaman", "zul aman", "harandar"},
     current = 1,
-    requiredProfession = { name = "Engineering" }
+    requiredProfession = {
+        name = "Engineering"
+    }
 }, {
     name = "Garrison Hearthstone",
     itemID = 110560,
-    spellID = 171253,
     spellName = "Garrison Hearthstone",
     destination = "Garrison",
     actionType = "toy",
@@ -23,7 +24,6 @@ TeleportToys = {{
 }, {
     name = "Dalaran Hearthstone",
     itemID = 140192,
-    spellID = 193759,
     spellName = "Dalaran Hearthstone",
     destination = "Dalaran",
     actionType = "toy",
@@ -31,31 +31,14 @@ TeleportToys = {{
     cooldown = "20 min",
     keywords = {"dalaran", "dal", "dalaran hearth"}
 }, {
-    name = "Ring of the Kirin Tor",
-    itemID = 40586,
-    spellName = "Ring of the Kirin Tor",
-    actionType = "toy",
-    category = "Toy",
-    cooldown = "30 min",
-    destination = "Dalaran (Northrend)",
-    keywords = {"dalaran", "dal", "northrend"}
-}, {
     name = "Jaina's Locket",
     itemID = 52251,
     spellName = "Jaina's Locket",
     actionType = "item",
     category = "Item",
     cooldown = "1 hour",
+    isTeleport = 1,
     keywords = {"dalaran", "dal", "northrend", "jaina locket"}
-}, {
-    name = "Cloak of Coordination",
-    itemID = 65274,
-    spellName = "Cloak of Coordination",
-    actionType = "toy",
-    category = "Toy",
-    cooldown = "2 hours",
-    destination = "Capital City",
-    keywords = {"capital", "city", "stormwind", "orgrimmar", "coordination"}
 }, {
     name = "Wormhole Generator: Northrend",
     itemID = 48933,
@@ -182,15 +165,58 @@ TeleportToys = {{
         rank = 1
     }
 }, {
-    name = "Time-Lost Artifact",
-    itemID = 103678,
-    spellName = "Time-Lost Artifact",
-    actionType = "item",
+    name = "Dimensional Ripper - Area 52",
+    itemID = 30542,
+    spellName = "Dimensional Ripper - Area 52",
+    actionType = "toy",
     category = "Toy",
-    cooldown = "1 min",
-    destination = "Timeless Isle",
-    keywords = {"timeless isle", "timeless"}
+    cooldown = "15 min",
+    destination = "Area 52 - Netherstorm",
+    keywords = {"area 52", "netherstorm"},
+    requiredProfession = {
+        name = "Engineering",
+        rank = 1
+    }
 }, {
+    name = "Dimensional Ripper - Everlook",
+    itemID = 18984,
+    spellName = "Dimensional Ripper - Everlook",
+    actionType = "toy",
+    category = "Toy",
+    cooldown = "15 min",
+    destination = "Everlook - Winterspring",
+    keywords = {"everlook", "winterspring"},
+    requiredProfession = {
+        name = "Engineering",
+        rank = 1
+    }
+},  {
+    name = "Ultrasafe Transporter: Toshley's Station",
+    itemID = 30544,
+    spellName = "Ultrasafe Transporter: Toshley's Station",
+    actionType = "toy",
+    category = "Toy",
+    cooldown = "15 min",
+    destination = "Toshley's Station - Blade's Edge Mountains",
+    keywords = {"toshley's station", "blade's edge mountains", "blades edge mountains"},
+    requiredProfession = {
+        name = "Engineering",
+        rank = 1
+    }
+},  {
+    name = "Ultrasafe Transporter: Gadgetzan",
+    itemID = 18986,
+    spellName = "Ultrasafe Transporter: Gadgetzan",
+    actionType = "toy",
+    category = "Toy",
+    cooldown = "15 min",
+    destination = "Gadgetzan - Tanaris",
+    keywords = {"gadgetzan", "tanaris"},
+    requiredProfession = {
+        name = "Engineering",
+        rank = 1
+    }
+},  {
     name = "Mole Machine",
     itemID = 265225,
     spellName = "Mole Machine",
@@ -199,15 +225,6 @@ TeleportToys = {{
     cooldown = "30 min",
     destination = "Various",
     keywords = {"mole machine", "dark iron"}
-}, {
-    name = "Violet Seal of the Grand Magus",
-    itemID = 142469,
-    spellName = "Violet Seal of the Grand Magus",
-    actionType = "item",
-    category = "Toy",
-    cooldown = "4 hours",
-    destination = "Karazhan",
-    keywords = {"karazhan"}
 }, {
     name = "Fractured Necrolyte Skull",
     itemID = 151016,
@@ -236,6 +253,24 @@ TeleportToys = {{
     destination = "Arcantina",
     keywords = {"arcantina", "quel'thalas", "quelthalas", "silvermoon"},
     current = 1
+}, {
+    name = "Direbrew's Remote",
+    itemID = 253629,
+    spellName = "Direbrew's Remote",
+    actionType = "item",
+    category = "Toy",
+    cooldown = "1 hour",
+    destination = "Blackrock Depths (The Grim Guzzler)",
+    keywords = {"blackrock depths", "grim guzzler", "direbrew"}
+}, {
+    name = "Potion of Deepholm",
+    itemID = 58487,
+    spellName = "Potion of Deepholm",
+    actionType = "item",
+    category = "Toy",
+    cooldown = "1 hour",
+    destination = "Deepholm",
+    keywords = {"deepholm"}
 }}
 
 DelveTeleports = {{

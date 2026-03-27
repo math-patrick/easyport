@@ -190,7 +190,7 @@ local function IsTeleportEntry(item)
         return false
     end
     return item.category == "M+ Dungeon" or item.category == "Raid" or item.category == "Delve" or item.category ==
-               "Toy"
+               "Toy" or item.isTeleport == 1
 end
 
 local function IsCurrentDungeonEntry(item)
@@ -735,7 +735,7 @@ ApplySelectedTabVisual = function(parent)
         return
     end
 
-    if not tabHasContentById[selectedTab] then
+    if not tabButtons[selectedTab] then
         selectedTab = GetFirstEnabledTabId() or TAB_CURRENT_DUNGEONS
     end
 
@@ -743,7 +743,7 @@ ApplySelectedTabVisual = function(parent)
     for _, tabId in ipairs(tabOrder) do
         local tab = tabButtons[tabId]
         if tab then
-            local selected = tab == activeTab and tabHasContentById[tabId] == true
+            local selected = tab == activeTab
             SetTabSelectedState(tab, selected)
         end
     end

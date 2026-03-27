@@ -68,7 +68,6 @@ Hearthstones = {{
 }, {
     name = "Eternal Traveler's Hearthstone",
     itemID = 172179,
-    spellID = 308742,
     spellName = "Eternal Traveler's Hearthstone",
     actionType = "toy",
     category = "Home",
@@ -77,7 +76,6 @@ Hearthstones = {{
 }, {
     name = "Brewfest Reveler's Hearthstone",
     itemID = 166747,
-    spellID = 286331,
     spellName = "Brewfest Reveler's Hearthstone",
     actionType = "toy",
     category = "Home",
@@ -86,7 +84,6 @@ Hearthstones = {{
 }, {
     name = "Headless Horseman's Hearthstone",
     itemID = 163045,
-    spellID = 278559,
     spellName = "Headless Horseman's Hearthstone",
     actionType = "toy",
     category = "Home",
@@ -95,7 +92,6 @@ Hearthstones = {{
 }, {
     name = "Lunar Elder's Hearthstone",
     itemID = 165669,
-    spellID = 278244,
     spellName = "Lunar Elder's Hearthstone",
     actionType = "toy",
     category = "Home",
@@ -104,7 +100,6 @@ Hearthstones = {{
 }, {
     name = "Peddlefeet's Lovely Hearthstone",
     itemID = 165670,
-    spellID = 278880,
     spellName = "Peddlefeet's Lovely Hearthstone",
     actionType = "toy",
     category = "Home",
@@ -113,7 +108,6 @@ Hearthstones = {{
 }, {
     name = "Noble Gardener's Hearthstone",
     itemID = 165802,
-    spellID = 278559,
     spellName = "Noble Gardener's Hearthstone",
     actionType = "toy",
     category = "Home",
@@ -122,7 +116,6 @@ Hearthstones = {{
 }, {
     name = "Fire Eater's Hearthstone",
     itemID = 166746,
-    spellID = 286353,
     spellName = "Fire Eater's Hearthstone",
     actionType = "toy",
     category = "Home",
@@ -131,7 +124,6 @@ Hearthstones = {{
 }, {
     name = "Greatfather Winter's Hearthstone",
     itemID = 162973,
-    spellID = 278853,
     spellName = "Greatfather Winter's Hearthstone",
     actionType = "toy",
     category = "Home",
@@ -140,7 +132,6 @@ Hearthstones = {{
 }, {
     name = "Holographic Digitalization Hearthstone",
     itemID = 168907,
-    spellID = 298068,
     spellName = "Holographic Digitalization Hearthstone",
     actionType = "toy",
     category = "Home",
@@ -149,7 +140,6 @@ Hearthstones = {{
 }, {
     name = "Dominated Hearthstone",
     itemID = 188952,
-    spellID = 356389,
     spellName = "Dominated Hearthstone",
     actionType = "toy",
     category = "Home",
@@ -158,7 +148,6 @@ Hearthstones = {{
 }, {
     name = "Enlightened Hearthstone",
     itemID = 190237,
-    spellID = 363799,
     spellName = "Enlightened Hearthstone",
     actionType = "toy",
     category = "Home",
@@ -167,7 +156,6 @@ Hearthstones = {{
 }, {
     name = "Broker Translocation Matrix",
     itemID = 190196,
-    spellID = 367013,
     spellName = "Broker Translocation Matrix",
     actionType = "toy",
     category = "Home",
@@ -176,7 +164,6 @@ Hearthstones = {{
 }, {
     name = "Deepdweller's Earthen Hearthstone",
     itemID = 208704,
-    spellID = 422284,
     spellName = "Deepdweller's Earthen Hearthstone",
     actionType = "toy",
     category = "Home",
@@ -259,14 +246,6 @@ Hearthstones = {{
     name = "Cosmic Hearthstone",
     itemID = 246565,
     spellName = "Cosmic Hearthstone",
-    actionType = "toy",
-    category = "Home",
-    cooldown = "30 min",
-    keywords = {"hearthstone", "hearth", "home", "inn"}
-}, {
-    name = "Timerunner's Hearthstone",
-    itemID = 250411,
-    spellName = "Timerunner's Hearthstone",
     actionType = "toy",
     category = "Home",
     cooldown = "30 min",

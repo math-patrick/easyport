@@ -169,6 +169,15 @@ ServiceToys = { {
     destination = "Cooking Fire",
     keywords = { "cooking", "wickerman", "wicker" }
 }, {
+    name = "Cooking Fire",
+    spellId = 818,
+    spellName = "Cooking Fire",
+    actionType = "spell",
+    category = "Utility",
+    cooldown = "10 min",
+    destination = "Cooking Fire",
+    keywords = { "cooking", "wickerman", "wicker" }
+}, {
     name = "Sturdy Love Fool",
     itemID = 144339,
     spellName = "Sturdy Love Fool",
@@ -260,4 +269,32 @@ ServiceToys = { {
     destination = "Bank",
     keywords = { "bank" },
     legacy = 1
+}, {
+    name = "Darkmoon Cannon",
+    itemID = 122124,
+    actionType = "item",
+    category = "Utility",
+    cooldown = "30 min",
+    keywords = { "darkmoon cannon" },
+}, {
+    name = "Brazier of Awakening",
+    itemID = 127770,
+    actionType = "item",
+    category = "Utility",
+    cooldown = "30 min",
+    keywords = { "Brazier of Awakening", "ress", "revive" },
+}, {
+    name = "Ultimate Gnomish Army Knife",
+    itemID = 114943,
+    actionType = "item",
+    category = "Utility",
+    cooldown = "30 min",
+    keywords = { "Ultimate Gnomish Army Knife", "RESS", "revive" },
+}, {
+    name = "Recuperate",
+    spellID = 1231411,
+    actionType = "spell",
+    category = "Utility",
+    cooldown = "30 min",
+    keywords = { "recuperate" },
 }}

@@ -4,7 +4,7 @@ local WotLK = {{
     spellName = "Path of Unyielding Blight",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"pit of saron", "pit", "saron", "cu do sarão"},
+    keywords = {"pit of saron", "pit", "saron", "cu do sarão", "sauron", "pit of sauron"},
     current = 1
 }}
 
@@ -556,7 +556,7 @@ local Midnight = {{
     spellName = "Path of Devoted Magistry",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"magisters", "magister's terrace", "terrace"},
+    keywords = {"magisters", "magister's terrace", "terrace", "magister"},
     current = 1
 }, {
     name = "Windrunner Spire",
@@ -572,7 +572,7 @@ local Midnight = {{
     spellName = "Path of the Fractured Core",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"nexus-point", "xenas", "nexus point xenas", "nexus johnsonn"},
+    keywords = {"nexus-point", "xenas", "nexus point", "nexus johnsonn", "nexus p", "nexus"},
     current = 1
 }, {
     name = "Maisara Caverns",
