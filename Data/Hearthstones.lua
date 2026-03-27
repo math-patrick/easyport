@@ -147,7 +147,7 @@ Hearthstones = {{
     keywords = {"hearthstone", "hearth", "home", "inn"}
 }, {
     name = "Enlightened Hearthstone",
-    itemID = 190237,
+    itemID = 190196,
     spellName = "Enlightened Hearthstone",
     actionType = "toy",
     category = "Home",
@@ -155,7 +155,7 @@ Hearthstones = {{
     keywords = {"hearthstone", "hearth", "home", "inn"}
 }, {
     name = "Broker Translocation Matrix",
-    itemID = 190196,
+    itemID = 190237,
     spellName = "Broker Translocation Matrix",
     actionType = "toy",
     category = "Home",
@@ -246,6 +246,70 @@ Hearthstones = {{
     name = "Cosmic Hearthstone",
     itemID = 246565,
     spellName = "Cosmic Hearthstone",
+    actionType = "toy",
+    category = "Home",
+    cooldown = "30 min",
+    keywords = {"hearthstone", "hearth", "home", "inn"}
+}, {
+    name = "Corewarden's Hearthstone",
+    itemID = 265100,
+    spellName = "Corewarden's Hearthstone",
+    actionType = "toy",
+    category = "Home",
+    cooldown = "30 min",
+    keywords = {"hearthstone", "hearth", "home", "inn"}
+}, {
+    name = "Corewarden's Hearthstone",
+    itemID = 265100,
+    spellName = "Corewarden's Hearthstone",
+    actionType = "toy",
+    category = "Home",
+    cooldown = "30 min",
+    keywords = {"hearthstone", "hearth", "home", "inn"}
+}, {
+    name = "Fire Eater's Hearthstone",
+    itemID = 166746,
+    spellName = "Fire Eater's Hearthstone",
+    actionType = "toy",
+    category = "Home",
+    cooldown = "30 min",
+    keywords = {"hearthstone", "hearth", "home", "inn"}
+}, {
+    name = "Lightcalled Hearthstone",
+    itemID = 257736,
+    spellName = "Lightcalled Hearthstone",
+    actionType = "toy",
+    category = "Home",
+    cooldown = "30 min",
+    keywords = {"hearthstone", "hearth", "home", "inn"}
+}, {
+    name = "Lunar Elder's Hearthstone",
+    itemID = 165669,
+    spellName = "Lunar Elder's Hearthstone",
+    actionType = "toy",
+    category = "Home",
+    cooldown = "30 min",
+    keywords = {"hearthstone", "hearth", "home", "inn"}
+}, {
+    name = "Ohn'ir Windsage's Hearthstone",
+    itemID = 200630,
+    spellName = "Ohn'ir Windsage's Hearthstone",
+    actionType = "toy",
+    category = "Home",
+    cooldown = "30 min",
+    keywords = {"hearthstone", "hearth", "home", "inn"}
+}, {
+    name = "Preyseeker's Hearthstone",
+    itemID = 263933,
+    spellName = "Preyseeker's Hearthstone",
+    actionType = "toy",
+    category = "Home",
+    cooldown = "30 min",
+    keywords = {"hearthstone", "hearth", "home", "inn"}
+}, {
+    name = "Timewalker's Hearthstone",
+    itemID = 193588,
+    spellName = "Timewalker's Hearthstone",
     actionType = "toy",
     category = "Home",
     cooldown = "30 min",

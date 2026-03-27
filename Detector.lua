@@ -51,11 +51,6 @@ local function IsPortalSpell(teleportData)
     return spellName:find("^Portal:") or spellName:find("^Ancient Portal:")
 end
 
-local function IsTeleport(teleportData)
-    local spellName = teleportData.spellName or ""
-    return spellName:find("^Teleport:") or spellName:find("^Ancient Teleport:")
-end
-
 local function IsServiceOption(data)
     local destination = data.destination or ""
     return destination:find("Repair") or destination:find("Mailbox") or destination:find("Anvil") or destination:find("Transmog")
@@ -74,9 +69,8 @@ local function ShouldSuppressOption(data, settings, inInstance)
     local isUtility = data.category and data.category == "Utility"
     local isMPlus = data.category == "M+ Dungeon"
     local isRaid = data.category == "Raid"
-    local isDelve = data.category == "Delve"
     local isPortal = IsPortalSpell(data)
-    local isTeleport = IsTeleport(data)
+    local isTeleport = data.category == "Teleport"
     local isHearthstone = IsHearthstone(data)
     local isMount = data.actionType == "mount"
     local isService = IsServiceOption(data)

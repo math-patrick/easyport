@@ -189,8 +189,7 @@ local function IsTeleportEntry(item)
     if not item then
         return false
     end
-    return item.category == "M+ Dungeon" or item.category == "Raid" or item.category == "Delve" or item.category ==
-               "Toy" or item.isTeleport == 1
+    return item.category == "M+ Dungeon" or item.category == "Raid" or item.category == "Teleport"
 end
 
 local function IsCurrentDungeonEntry(item)

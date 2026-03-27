@@ -148,7 +148,7 @@ function Helpers.GetActionAndNoun(data)
         nounForm = data.spellName or data.name
         announceVerb = string.format(Lstr("announce.casting", "Casting %s!"), nounForm)
     elseif data.category and
-        (data.category == "M+ Dungeon" or data.category == "Raid" or data.category == "Delve" or data.category == "Toy") then
+        (data.category == "M+ Dungeon" or data.category == "Raid" or data.category == "Teleport") then
         actionVerb = Lstr("banner.action.teleport", "Teleport to")
         announceVerb = string.format(Lstr("announce.teleporting", "Teleporting to %s!"), nounForm)
     end
