@@ -31,15 +31,10 @@ jobs:
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
-      - name: Create Pull Request
-        if: github.ref != 'refs/heads/main'
-        uses: peter-evans/create-pull-request@v6
+      - name: PR Automation
+        uses: devjoes/pr-automation@v0.1.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          title: ${{ github.event.head_commit.message }}
-          body: ${{ github.event.head_commit.message }}
-          branch: ${{ github.ref_name }}
-          base: main
 
       - name: Bump alpha version (main only)
         if: github.ref == 'refs/heads/main'
@@ -50,3 +45,4 @@ jobs:
           git tag v$(node -p "require('./package.json').version")
           git push
           git push --tags
+          
