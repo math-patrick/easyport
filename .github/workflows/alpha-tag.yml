@@ -3,7 +3,7 @@ name: Alpha Auto Tag
 on:
   push:
     branches:
-      - main
+      - '**'
 
 permissions:
   contents: write
@@ -31,5 +31,26 @@ jobs:
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
-      - name: Run bump alpha
-        run: npm run bump:alpha
+      - name: Bump alpha version
+        run: |
+          npm version patch --preid=alpha --no-git-tag-version
+          git add package.json
+          git commit -m "chore: bump alpha version [skip ci]" || echo "No changes to commit"
+          git push
+
+      - name: Tag and push tag (main only)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git tag v$(node -p "require('./package.json').version")
+          git push --tags
+
+      - name: Create Pull Request
+        if: github.ref != 'refs/heads/main'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: bump alpha version [skip ci]"
+          title: "Alpha version bump"
+          body: "Automated alpha version bump and PR creation."
+          branch: ${{ github.ref_name }}
+          base: main

@@ -1,6 +1,6 @@
 {
   "name": "nozmie-addon",
-  "version": "2.0.6-alpha.0",
+  "version": "2.2.0-alpha",
   "description": "Nozmie WoW Addon packaging automation",
   "scripts": {
     "bump:alpha": "npm version prepatch --preid=alpha && git push && git push --tags",
