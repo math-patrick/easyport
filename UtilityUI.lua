@@ -189,7 +189,7 @@ local function IsTeleportEntry(item)
     if not item then
         return false
     end
-    return item.category == "M+ Dungeon" or item.category == "Raid" or item.category == "Teleport"
+    return item.category == "M+ Dungeon" or item.category == "Raid" or item.category == "Teleport" or item.isTeleport == true
 end
 
 local function IsCurrentDungeonEntry(item)
@@ -1011,6 +1011,8 @@ EnsureFrame = function()
 end
 
 SLASH_NOZUI1 = "/nozui"
+SLASH_NOZUI2 = "/noz"
+SLASH_NOZUI3 = "/nozmie"
 SlashCmdList["NOZUI"] = function()
     UtilityUI.Show()
 end

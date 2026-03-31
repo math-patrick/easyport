@@ -279,6 +279,15 @@ TeleportToys = {{
     cooldown = "1 hour",
     destination = "Random",
     keywords = {"deepholm"}
+}, {
+    name = "Lucky Tortollan Charm",
+    itemID = 202046,
+    spellName = "Lucky Tortollan Charm",
+    actionType = "item",
+    category = "Teleport",
+    cooldown = "1 hour",
+    destination = "Stormsong Valley",
+    keywords = {"stormsong", "kul tiras"}
 }}
 
 DelveTeleports = {{

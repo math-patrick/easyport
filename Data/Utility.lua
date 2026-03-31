@@ -89,7 +89,8 @@ ServiceToys = {{
     category = "Utility",
     cooldown = "1 hour",
     destination = "Reaves",
-    keywords = {"reaves", "repair", "jeeves"},
+    isTeleport = true,
+    keywords = {"reaves", "repair", "jeeves", "Azsuna", "Val'sharah", "valsharah", "Highmountain", "Stormheim", "Suramar", "broken isles"},
     requiredProfession = {
         name = "Engineering"
     }
@@ -101,7 +102,8 @@ ServiceToys = {{
     category = "Utility",
     cooldown = "1 hour",
     destination = "Reaves",
-    keywords = {"reaves", "repair", "jeeves"},
+    isTeleport = true,
+    keywords = {"reaves", "repair", "jeeves", "Azsuna", "Val'sharah", "valsharah", "Highmountain", "Stormheim", "Suramar", "broken isles"},
     requiredProfession = {
         name = "Engineering"
     }

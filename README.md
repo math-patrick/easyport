@@ -60,8 +60,8 @@
 
 | Command | Description |
 |---------|-------------|
-| `/noz` or `/nozmie` | Open the settings panel. |
-| `/noz utility` | Open the Utility Page browser. |
+| `/noz` or `/nozmie` | Open the Utility UI. |
+| `/noz settings` | Open the settings panel. |
 | `/noz minimap` | Toggle the minimap icon visibility. |
 | `/noz last` | Display the last banner again. |
 | `/noz blacklist` | Show the current blacklist. |
@@ -118,6 +118,8 @@ Nozmie supports the following languages:
 
 - **Only your spells/items are shown**: The addon only displays actions you can actually perform (owned spells, items, or toys).
 - **Whole-word matching**: Prevents false positives; "portal" will not match "portable" or "portalstone".
+- **Minimap button enabled by default**: The minimap icon is now enabled by default for easier access.
+- **/noz and /nozmie open Utility UI**: You can now use `/noz` or `/nozmie` to open the Utility UI directly.
 - **Stacking**: If multiple actions match a single message, they'll all be displayed in a stacked banner format.
 - **Instance-specific suppression**: Use instance filters to hide unwanted categories in dungeons/raids while keeping them visible in open world.
 - **Cooldown-aware**: Icons fade or display cooldown timers when spells are on cooldown.

@@ -132,7 +132,7 @@ end
 local function HandleCommand(args)
     local cmd = args:lower():trim()
 
-    if cmd == "settings" or cmd == "config" or cmd == "options" or cmd == "" then
+    if cmd == "settings" or cmd == "config" or cmd == "options" then
         Settings.Show()
     elseif cmd:match("^blacklist%s+(.+)") then
         local words = args:match("^blacklist%s+(.+)")
@@ -161,9 +161,9 @@ local function HandleCommand(args)
         print("|cff00ff00Nozmie:|r " .. message)
     elseif cmd == "last" then
         _G.Nozmie_ShowLastBanner()
-    else
+    elseif cmd == "help" then
         print("|cff00ff00Nozmie:|r " .. Lstr("cmd.title", "Commands:"))
-        print(Lstr("cmd.open", "  /noz - Open settings"))
+        print(Lstr("cmd.open", "  /noz - Open utility UI"))
         print(Lstr("cmd.openAlt", "  /noz settings - Open settings"))
         print(Lstr("cmd.minimap", "  /noz minimap - Toggle minimap icon"))
         print(Lstr("cmd.last", "  /noz last - Show last banner"))
@@ -193,8 +193,6 @@ local function Initialize()
     end
 
     -- Register slash commands
-    SLASH_NOZMIE1 = "/nozmie"
-    SLASH_NOZMIE2 = "/noz"
     SlashCmdList["NOZMIE"] = HandleCommand
 end
 
