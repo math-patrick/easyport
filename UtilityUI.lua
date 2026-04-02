@@ -47,7 +47,6 @@ local EnsureFrame
 local BuildDataCache
 local RefreshLayout
 local tabButtons = {}
-local tabIndexById = {}
 local tabHasContentById = {}
 local tabOrder = {TAB_CURRENT_DUNGEONS, TAB_LEGACY_DUNGEONS, TAB_TELEPORTS, TAB_UTILITY, TAB_HEARTHSTONE}
 local showAllEntriesToggle
@@ -327,21 +326,14 @@ local function OpenWowheadForEntry(item)
     StaticPopup_Show(WOWHEAD_POPUP_KEY)
 end
 
-local function ShowEntryContextMenu(button)
-    if not button then
-        return
-    end
-
-    local data = button.nozmieTooltipData
-    if not data then
-        return
-    end
-
+local function EnsureContextMenuFrame()
     if not contextMenuFrame then
         contextMenuFrame = CreateFrame("Frame", "NozmieUtilityContextMenu", UIParent, "UIDropDownMenuTemplate")
     end
+    return contextMenuFrame
+end
 
-    local entryID = button.nozmieEntryID
+local function BuildEntryContextMenuEntries(entryID, data)
     local function ToggleFavouriteAction()
         if not entryID then
             return
@@ -364,56 +356,85 @@ local function ShowEntryContextMenu(button)
     local isFav = entryID and IsFavourite(entryID) or false
     local favLabel = isFav and Lstr("utility.favourites.remove", "Remove from favourites") or
                          Lstr("utility.favourites.add", "Add to favourites")
-    local announceLabel = Lstr("utility.context.announce", "Announce in chat")
-    local wowheadLabel = Lstr("utility.context.copyWowhead", "Copy Wowhead link")
-    local menuEntries = {
+
+    return {
         {
             text = favLabel,
             action = ToggleFavouriteAction
         }, {
-            text = announceLabel,
+            text = Lstr("utility.context.announce", "Announce in chat"),
             action = AnnounceAction
         }, {
-            text = wowheadLabel,
+            text = Lstr("utility.context.copyWowhead", "Copy Wowhead link"),
             action = CopyWowheadAction
         }
-    }
+    }, CopyWowheadAction
+end
 
-    if EasyMenu then
-        local menu = {}
-        for _, entry in ipairs(menuEntries) do
-            menu[#menu + 1] = {
-                text = entry.text,
-                notCheckable = true,
-                func = entry.action
-            }
+local function OpenContextMenuWithEasyMenu(menuFrame, menuEntries)
+    if not EasyMenu then
+        return false
+    end
+
+    local menu = {}
+    for _, entry in ipairs(menuEntries) do
+        menu[#menu + 1] = {
+            text = entry.text,
+            notCheckable = true,
+            func = entry.action
+        }
+    end
+
+    EasyMenu(menu, menuFrame, "cursor", 0, 0, "MENU", 2)
+    return true
+end
+
+local function OpenContextMenuWithDropDown(menuFrame, menuEntries)
+    if not (UIDropDownMenu_Initialize and ToggleDropDownMenu and UIDropDownMenu_CreateInfo and UIDropDownMenu_AddButton) then
+        return false
+    end
+
+    UIDropDownMenu_Initialize(menuFrame, function(_, level)
+        if level ~= 1 then
+            return
         end
 
-        EasyMenu(menu, contextMenuFrame, "cursor", 0, 0, "MENU", 2)
+        for _, entry in ipairs(menuEntries) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = entry.text
+            info.notCheckable = true
+            info.func = entry.action
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end, "MENU")
+
+    ToggleDropDownMenu(1, nil, menuFrame, "cursor", 0, 0)
+    return true
+end
+
+local function ShowEntryContextMenu(button)
+    if not button then
         return
     end
 
-    if UIDropDownMenu_Initialize and ToggleDropDownMenu and UIDropDownMenu_CreateInfo and UIDropDownMenu_AddButton then
-        UIDropDownMenu_Initialize(contextMenuFrame, function(_, level)
-            if level ~= 1 then
-                return
-            end
+    local data = button.nozmieTooltipData
+    if not data then
+        return
+    end
 
-            for _, entry in ipairs(menuEntries) do
-                local info = UIDropDownMenu_CreateInfo()
-                info.text = entry.text
-                info.notCheckable = true
-                info.func = entry.action
-                UIDropDownMenu_AddButton(info, level)
-            end
-        end, "MENU")
+    local menuFrame = EnsureContextMenuFrame()
+    local menuEntries, fallbackAction = BuildEntryContextMenuEntries(button.nozmieEntryID, data)
 
-        ToggleDropDownMenu(1, nil, contextMenuFrame, "cursor", 0, 0)
+    if OpenContextMenuWithEasyMenu(menuFrame, menuEntries) then
+        return
+    end
+
+    if OpenContextMenuWithDropDown(menuFrame, menuEntries) then
         return
     end
 
     -- If menu APIs are unavailable in this client build, keep right-click useful.
-    CopyWowheadAction()
+    fallbackAction()
 end
 
 local function IsTeleportEntry(item)
@@ -421,27 +442,6 @@ local function IsTeleportEntry(item)
         return false
     end
     return item.category == "M+ Dungeon" or item.category == "Raid" or item.category == "Teleport" or item.isTeleport == true
-end
-
-local function IsCurrentDungeonEntry(item)
-    return item and tonumber(item.current) == 1
-end
-
-local function IsRandomHearthstoneEntry(item)
-    if not item then
-        return false
-    end
-    return item.actionType == "random_hearthstone" or item.name == "Random Hearthstone"
-end
-
-local function IsLegacyEntry(item)
-    if not item then
-        return false
-    end
-    if item.legacy == true then
-        return true
-    end
-    return tonumber(item.legacy) == 1
 end
 
 local function ShouldShowUnavailableEntry(item)
@@ -454,10 +454,6 @@ local function ShouldShowUnavailableEntry(item)
     end
 
     return true
-end
-
-local function MatchesFilter(item)
-    return item ~= nil
 end
 
 local function MatchesSearch(item, query)
@@ -510,7 +506,7 @@ local function TabHasContent(tabId)
     end
 
     for _, item in ipairs(dataCache) do
-        if MatchesFilter(item) and ItemMatchesTab(item, tabId) then
+        if item and ItemMatchesTab(item, tabId) then
             return true
         end
     end
@@ -534,14 +530,12 @@ local function UpdateTabVisibility(parent)
 
     local prevTab
     local tabCount = 0
-    tabIndexById = {}
     tabHasContentById = {}
 
     for _, tabId in ipairs(tabOrder) do
         local tab = tabButtons[tabId]
         if tab then
             tabCount = tabCount + 1
-            tabIndexById[tabId] = tabCount
             tab:SetID(tabCount)
 
             local hasContent = TabHasContent(tabId)
@@ -613,28 +607,18 @@ local function ApplyFavouriteIcon(texture)
     texture:SetTexCoord(0, 0.25, 0, 0.25)
 end
 
-local function ApplyFavouriteIconColor(toggle, isFav, isHover)
+local function ApplyFavouriteIconColor(toggle, isFav)
     if not toggle or not toggle.iconTexture then
         return
     end
 
     local icon = toggle.iconTexture
     if isFav then
-        if isHover then
-            icon:SetVertexColor(1, 0.95, 0.35, 1)
-            icon:SetAlpha(1)
-        else
-            icon:SetVertexColor(1, 0.88, 0.25, 1)
-            icon:SetAlpha(1)
-        end
+        icon:SetVertexColor(1, 0.88, 0.25, 1)
+        icon:SetAlpha(1)
     else
-        if isHover then
-            icon:SetVertexColor(0.95, 0.95, 1, 1)
-            icon:SetAlpha(0.95)
-        else
-            icon:SetVertexColor(0.72, 0.72, 0.72, 1)
-            icon:SetAlpha(0.85)
-        end
+        icon:SetVertexColor(0.72, 0.72, 0.72, 1)
+        icon:SetAlpha(0.85)
     end
 end
 
@@ -744,7 +728,7 @@ local function UpdateFavouriteToggle(button, entry)
     local oldState = button.nozmieLastFavState
     if icon then
         ApplyFavouriteIcon(icon)
-        ApplyFavouriteIconColor(button.favouriteToggle, isFav, false)
+        ApplyFavouriteIconColor(button.favouriteToggle, isFav)
     end
 
     button.favouriteToggle:SetShown(isFav)
@@ -816,6 +800,25 @@ local function EnsureKeystoneIndicatorVisuals(button)
 
 end
 
+local function ResetKeystoneIndicatorVisuals(button)
+    if not button then
+        return
+    end
+
+    if button.nozmieKeyBackGlow then
+        button.nozmieKeyBackGlow:SetAlpha(0)
+    end
+    if button.nozmieKeyGlow then
+        button.nozmieKeyGlow:SetAlpha(0)
+    end
+    if button.nozmieKeyBadge then
+        button.nozmieKeyBadge:SetAlpha(0)
+    end
+    if button.nozmieKeyBadgeRing then
+        button.nozmieKeyBadgeRing:SetAlpha(0)
+    end
+end
+
 local function ApplyKeystoneIndicator(button, entry)
     if not button then
         return
@@ -825,35 +828,13 @@ local function ApplyKeystoneIndicator(button, entry)
     EnsureKeystoneIndicatorVisuals(button)
 
     if not IsKeystoneIndicatorEnabled() or not Helpers or not Helpers.GetKeystoneOwnershipForEntry then
-        if button.nozmieKeyBackGlow then
-            button.nozmieKeyBackGlow:SetAlpha(0)
-        end
-        if button.nozmieKeyGlow then
-            button.nozmieKeyGlow:SetAlpha(0)
-        end
-        if button.nozmieKeyBadge then
-            button.nozmieKeyBadge:SetAlpha(0)
-        end
-        if button.nozmieKeyBadgeRing then
-            button.nozmieKeyBadgeRing:SetAlpha(0)
-        end
+        ResetKeystoneIndicatorVisuals(button)
         return
     end
 
     local ownership = Helpers.GetKeystoneOwnershipForEntry(entry)
     if not ownership then
-        if button.nozmieKeyBackGlow then
-            button.nozmieKeyBackGlow:SetAlpha(0)
-        end
-        if button.nozmieKeyGlow then
-            button.nozmieKeyGlow:SetAlpha(0)
-        end
-        if button.nozmieKeyBadge then
-            button.nozmieKeyBadge:SetAlpha(0)
-        end
-        if button.nozmieKeyBadgeRing then
-            button.nozmieKeyBadgeRing:SetAlpha(0)
-        end
+        ResetKeystoneIndicatorVisuals(button)
         return
     end
 
@@ -1000,7 +981,7 @@ local function BuildFilteredData()
     -- If searching, search across all items; otherwise filter by tab
     if query and query ~= "" then
         for _, item in ipairs(dataCache) do
-            if MatchesFilter(item) and MatchesSearch(item, query) then
+            if item and MatchesSearch(item, query) then
                 table.insert(filteredData, item)
             end
         end
@@ -1008,7 +989,7 @@ local function BuildFilteredData()
         for _, item in ipairs(dataCache) do
             local matchesTab = ItemMatchesTab(item, selectedTab)
 
-            if matchesTab and MatchesFilter(item) then
+            if item and matchesTab then
                 table.insert(filteredData, item)
             end
         end
@@ -1043,7 +1024,7 @@ local function ClearButtonActions(button)
     end
 end
 
-local function ConfigureUnavailableButton(button, item)
+local function ConfigureUnavailableButton(button)
     ClearButtonActions(button)
     button.data = nil
     button.activeData = nil
@@ -1062,6 +1043,102 @@ local function ConfigureOwnedButton(button, item)
             cancelAutoHide = false
         })
     end
+end
+
+local function ApplyEntryTextAndStyle(button, data, isUnavailable, isFav)
+    button:SetAlpha(1)
+    button:EnableMouse(true)
+    button:SetHighlightTexture("Interface\\Buttons\\UI-Listbox-Highlight2")
+    local highlightTexture = button:GetHighlightTexture()
+    if highlightTexture then
+        highlightTexture:SetBlendMode("ADD")
+        highlightTexture:SetAlpha(1)
+    end
+    button.icon:SetAlpha(1)
+
+    button.name:SetFont(button.name:GetFont(), 12, "")
+    button.name:ClearAllPoints()
+    button.name:SetPoint("TOPLEFT", button.icon, "TOPRIGHT", 12, -2)
+    button.name:SetPoint("RIGHT", button, "RIGHT", -10, 0)
+
+    if SharedUI and SharedUI.GetEntryLabel then
+        button.name:SetText(SharedUI.GetEntryLabel(data))
+    else
+        button.name:SetText(ConfigHelpers.GetEntryName(data))
+    end
+
+    if isUnavailable then
+        button.name:SetTextColor(0.78, 0.78, 0.78)
+        button.category:SetTextColor(1, 0.82, 0.35)
+        button.category:SetText(Lstr("utility.entry.unavailable.hint", "Unavailable - click to copy Wowhead link"))
+    else
+        button.name:SetTextColor(1, 1, 1)
+        button.category:SetTextColor(0.7, 0.7, 0.7)
+        button.category:SetText(GetEntryDescription(data))
+    end
+
+    if isFav and not isUnavailable then
+        button.category:SetTextColor(0.86, 0.78, 0.36)
+    end
+
+    if IconHandling and IconHandling.ApplyIcon then
+        IconHandling.ApplyIcon(button.icon, data)
+    else
+        button.icon:SetTexture(ConfigHelpers.GetIconForEntry(data))
+    end
+
+    if button.icon and button.icon.SetDesaturated then
+        button.icon:SetDesaturated(isUnavailable)
+    end
+    button.icon:SetAlpha(isUnavailable and 0.75 or 1)
+    if isUnavailable then
+        button:SetAlpha(0.92)
+    end
+end
+
+local function UpdateEntryHotkey(button, data, isUnavailable)
+    if not button.hotkey then
+        return
+    end
+
+    local key, btnName = nil, button:GetName()
+    if not isUnavailable and btnName then
+        if data.itemID then
+            key = GetBindingKey("CLICK " .. btnName .. ":LeftButton")
+        elseif data.spellID then
+            key = GetBindingKey("CLICK " .. btnName .. ":LeftButton")
+        end
+    end
+
+    if key then
+        button.hotkey:SetText(key)
+        button.hotkey:Show()
+    else
+        button.hotkey:SetText("")
+        button.hotkey:Hide()
+    end
+end
+
+local function UpdateEntryCooldown(button, data, isUnavailable)
+    if not isUnavailable and IconHandling and IconHandling.ApplyCooldownVisual then
+        button.data = data
+        IconHandling.ApplyCooldownVisual(button.icon, button.cooldown, button.cooldownText, data)
+    elseif button.cooldown then
+        button.data = nil
+        button.cooldown:Hide()
+        if button.cooldownText then
+            button.cooldownText:SetText("")
+            button.cooldownText:Hide()
+        end
+    end
+end
+
+local function PositionGridButton(button, contentWidth, columns, col, row)
+    local x = col * (contentWidth / columns)
+    local y = row * (ROW_HEIGHT + GRID_PADDING)
+    button:ClearAllPoints()
+    button:SetPoint("TOPLEFT", content, "TOPLEFT", x, -y)
+    button:SetWidth((contentWidth / columns) - GRID_PADDING)
 end
 
 local function LayoutButtons()
@@ -1112,60 +1189,11 @@ local function LayoutButtons()
         button.nozmieUnavailableData = isUnavailable and data or nil
         UpdateFavouriteToggle(button, data)
         ApplyKeystoneIndicator(button, data)
-
-        -- Configure button
-        button:SetAlpha(1)
-        button:EnableMouse(true)
-        button:SetHighlightTexture("Interface\\Buttons\\UI-Listbox-Highlight2")
-        local highlightTexture = button:GetHighlightTexture()
-        if highlightTexture then
-            highlightTexture:SetBlendMode("ADD")
-            highlightTexture:SetAlpha(1)
-        end
-        button.icon:SetAlpha(1)
-
-        button.name:SetFont(button.name:GetFont(), 12, "")
-        button.name:ClearAllPoints()
-        button.name:SetPoint("TOPLEFT", button.icon, "TOPRIGHT", 12, -2)
-        button.name:SetPoint("RIGHT", button, "RIGHT", -10, 0)
-
-        if SharedUI and SharedUI.GetEntryLabel then
-            button.name:SetText(SharedUI.GetEntryLabel(data))
-        else
-            button.name:SetText(ConfigHelpers.GetEntryName(data))
-        end
-
-        if isUnavailable then
-            button.name:SetTextColor(0.78, 0.78, 0.78)
-            button.category:SetTextColor(1, 0.82, 0.35)
-            button.category:SetText(Lstr("utility.entry.unavailable.hint", "Unavailable - click to copy Wowhead link"))
-        else
-            button.name:SetTextColor(1, 1, 1)
-            button.category:SetTextColor(0.7, 0.7, 0.7)
-            button.category:SetText(GetEntryDescription(data))
-        end
-
-        if isFav and not isUnavailable then
-            button.category:SetTextColor(0.86, 0.78, 0.36)
-        end
-
-        if IconHandling and IconHandling.ApplyIcon then
-            IconHandling.ApplyIcon(button.icon, data)
-        else
-            button.icon:SetTexture(ConfigHelpers.GetIconForEntry(data))
-        end
-
-        if button.icon and button.icon.SetDesaturated then
-            button.icon:SetDesaturated(isUnavailable)
-        end
-        button.icon:SetAlpha(isUnavailable and 0.75 or 1)
-        if isUnavailable then
-            button:SetAlpha(0.92)
-        end
+        ApplyEntryTextAndStyle(button, data, isUnavailable, isFav)
 
         if not IsCombatLocked() then
             if isUnavailable then
-                ConfigureUnavailableButton(button, data)
+                ConfigureUnavailableButton(button)
             else
                 ConfigureOwnedButton(button, data)
             end
@@ -1178,41 +1206,9 @@ local function LayoutButtons()
             button.rightArrow:Hide()
         end
 
-        if button.hotkey then
-            local key, btnName = nil, button:GetName()
-            if not isUnavailable and btnName then
-                if data.itemID then
-                    key = GetBindingKey("CLICK " .. btnName .. ":LeftButton")
-                elseif data.spellID then
-                    key = GetBindingKey("CLICK " .. btnName .. ":LeftButton")
-                end
-            end
-            if key then
-                button.hotkey:SetText(key)
-                button.hotkey:Show()
-            else
-                button.hotkey:SetText("")
-                button.hotkey:Hide()
-            end
-        end
-
-        -- Cooldown logic
-        if not isUnavailable and IconHandling and IconHandling.ApplyCooldownVisual then
-            button.data = data
-            IconHandling.ApplyCooldownVisual(button.icon, button.cooldown, button.cooldownText, data)
-        elseif button.cooldown then
-            button.data = nil
-            button.cooldown:Hide()
-            if button.cooldownText then
-                button.cooldownText:SetText("")
-                button.cooldownText:Hide()
-            end
-        end
-        local x = col * (width / columns)
-        local y = row * (ROW_HEIGHT + GRID_PADDING)
-        button:ClearAllPoints()
-        button:SetPoint("TOPLEFT", content, "TOPLEFT", x, -y)
-        button:SetWidth((width / columns) - GRID_PADDING)
+        UpdateEntryHotkey(button, data, isUnavailable)
+        UpdateEntryCooldown(button, data, isUnavailable)
+        PositionGridButton(button, width, columns, col, row)
         ApplyUtilityButtonCombatState(button)
         button:Show()
         col = col + 1
