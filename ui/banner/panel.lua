@@ -1,6 +1,10 @@
-local Config = Nozmie_Config
-local Helpers = Nozmie_Helpers
-local IconRenderer = _G.Nozmie_IconRenderer
+-- ============================================================================
+-- Nozmie - Banner UI Panel
+-- Creates and manages the banner frame
+-- ============================================================================
+
+local Constants = require("utils.constants")
+local BannerHelpers = require("ui.banner.helpers")
 
 local BannerUI = {}
 
@@ -11,6 +15,10 @@ local function Lstr(key, fallback)
     end
     return fallback or key
 end
+
+-- ============================================================================
+-- Internal Helpers
+-- ============================================================================
 
 local function CreateButton(parent, size, point, textures, tooltip, onClick)
     local btn = CreateFrame("Button", nil, parent)
@@ -48,13 +56,12 @@ local function CreateButton(parent, size, point, textures, tooltip, onClick)
 end
 
 local function CreateBannerIcon(parent)
+    local IconRenderer = _G.Nozmie_IconRenderer
     local iconFrame = IconRenderer.CreateIconFrame(parent, 32)
     iconFrame:SetPoint("LEFT", 4, 0)
     local texture = iconFrame.icon
     texture:SetSize(32, 32)
-
     IconRenderer.ApplyTooltip(iconFrame)
-
     return texture, iconFrame
 end
 
@@ -62,8 +69,7 @@ local function CreateBannerText(parent, iconFrame)
     local title = parent:CreateFontString(nil, "OVERLAY")
     title:SetFontObject("SystemFont_Shadow_Large")
     title:SetFont(title:GetFont(), 14)
-    title:SetPoint("LEFT", iconFrame, "RIGHT", -6, 8
-)
+    title:SetPoint("LEFT", iconFrame, "RIGHT", -6, 8)
     title:SetTextColor(0.9, 0.9, 0.95)
     title:SetJustifyH("LEFT")
     title:SetShadowColor(0, 0, 0, 1)
@@ -81,9 +87,13 @@ local function CreateBannerText(parent, iconFrame)
     return title, subtitle
 end
 
+-- ============================================================================
+-- Banner Factory
+-- ============================================================================
+
 function BannerUI.CreateBanner()
     local banner = CreateFrame("Button", nil, UIParent, "SecureActionButtonTemplate, BackdropTemplate")
-    banner:SetSize(Config.BANNER.WIDTH, Config.BANNER.HEIGHT)
+    banner:SetSize(Constants.BANNER_WIDTH, Constants.BANNER_HEIGHT)
     banner:SetFrameStrata("HIGH")
     banner:SetAttribute("type", "macro")
     banner:RegisterForClicks("AnyUp", "AnyDown")
@@ -101,14 +111,9 @@ function BannerUI.CreateBanner()
         tile = true,
         tileSize = 32,
         edgeSize = 32,
-        insets = {
-            left = 11,
-            right = 12,
-            top = 12,
-            bottom = 11
-        }
+        insets = { left = 11, right = 12, top = 12, bottom = 11 }
     })
-    banner:SetBackdropColor(unpack(Config.COLORS.BACKDROP_NORMAL))
+    banner:SetBackdropColor(unpack(Constants.BANNER_COLORS.BACKDROP_NORMAL))
     banner:SetBackdropBorderColor(1, 0.85, 0.4, 0.9)
 
     local inner = banner:CreateTexture(nil, "BACKGROUND")
@@ -118,10 +123,10 @@ function BannerUI.CreateBanner()
     inner:SetVertexColor(1, 1, 1, 0.85)
 
     banner:SetScript("OnEnter", function(self)
-        self:SetBackdropBorderColor(unpack(Config.COLORS.BORDER_HOVER))
+        self:SetBackdropBorderColor(unpack(Constants.BANNER_COLORS.BORDER_HOVER))
     end)
     banner:SetScript("OnLeave", function(self)
-        self:SetBackdropBorderColor(unpack(Config.COLORS.BORDER_NORMAL))
+        self:SetBackdropBorderColor(unpack(Constants.BANNER_COLORS.BORDER_NORMAL))
     end)
 
     local iconFrame
@@ -143,8 +148,8 @@ function BannerUI.CreateBanner()
         end
     end)
     dragButton:SetScript("OnDragStop", function()
-        banner:StopMovingOrSizing();
-        Helpers.SaveBannerPosition(banner)
+        banner:StopMovingOrSizing()
+        BannerHelpers.SaveBannerPosition(banner)
     end)
     banner.dragButton = dragButton
 
@@ -168,20 +173,16 @@ function BannerUI.CreateBanner()
     end)
 
     banner:SetScript("OnShow", function(self)
-        local Settings = Nozmie_Settings
-        if Settings and Settings.Get("hideDragIcon") then
-            if self.dragButton then
-                self.dragButton:Hide()
-            end
-        else
-            if self.dragButton then
-                self.dragButton:Show()
-            end
+        local Settings = _G.Nozmie_Settings
+        local hide = Settings and Settings.Get and Settings.Get("hideDragIcon")
+        if self.dragButton then
+            if hide then self.dragButton:Hide() else self.dragButton:Show() end
         end
     end)
 
-    Helpers.LoadBannerPosition(banner)
+    BannerHelpers.LoadBannerPosition(banner)
     return banner
 end
 
 _G.Nozmie_BannerUI = BannerUI
+return BannerUI

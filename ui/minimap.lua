@@ -1,5 +1,6 @@
 local ldb = LibStub("LibDataBroker-1.1")
 local icon = LibStub("LibDBIcon-1.0")
+local State = require("core.state")
 
 local dataobj = ldb:NewDataObject("Nozmie", {
     type = "launcher",
@@ -25,16 +26,44 @@ local dataobj = ldb:NewDataObject("Nozmie", {
 local Minimap = {}
 local isRegistered = false
 
+local function GetSettings()
+    return _G.Nozmie_Settings
+end
+
+local function GetMinimapDB()
+    NozmieDB = NozmieDB or {}
+    NozmieDB.minimap = NozmieDB.minimap or {}
+    return NozmieDB.minimap
+end
+
+local function IsMinimapEnabled()
+    local Settings = GetSettings()
+    if Settings and Settings.Get then
+        return Settings.Get("minimapIcon") == true
+    end
+    return State.GetSetting("minimapIcon") == true
+end
+
+local function SetMinimapEnabled(enabled)
+    local Settings = GetSettings()
+    if Settings and Settings.Set then
+        Settings.Set("minimapIcon", enabled == true)
+        return
+    end
+
+    State.SetSetting("minimapIcon", enabled == true)
+end
+
 function Minimap.UpdateVisibility()
     if not icon then
         return
     end
 
-    NozmieDB = NozmieDB or {}
-    NozmieDB.minimap = NozmieDB.minimap or {}
-    NozmieDB.minimap.hide = not NozmieDB.minimapIcon
+    local minimapDB = GetMinimapDB()
+    local enabled = IsMinimapEnabled()
+    minimapDB.hide = not enabled
 
-    if NozmieDB.minimapIcon then
+    if enabled then
         icon:Show("Nozmie")
     else
         icon:Hide("Nozmie")
@@ -46,16 +75,14 @@ function Minimap.Initialize()
         return
     end
 
-    NozmieDB = NozmieDB or {}
-    NozmieDB.minimap = NozmieDB.minimap or {}
-    NozmieDB.minimap.hide = not NozmieDB.minimapIcon
+    local minimapDB = GetMinimapDB()
+    minimapDB.hide = not IsMinimapEnabled()
 
     if not isRegistered then
-        icon:Register("Nozmie", dataobj, NozmieDB.minimap)
+        icon:Register("Nozmie", dataobj, minimapDB)
         icon:RegisterCallback("onMinimapIconMoved", function(event, name, position)
             if name == "Nozmie" then
-                NozmieDB.minimap = NozmieDB.minimap or {}
-                NozmieDB.minimap.minimapPos = position
+                GetMinimapDB().minimapPos = position
             end
         end)
         isRegistered = true
@@ -65,7 +92,7 @@ function Minimap.Initialize()
 end
 
 function Nozmie_ToggleMinimapIcon()
-    NozmieDB.minimapIcon = not NozmieDB.minimapIcon
+    SetMinimapEnabled(not IsMinimapEnabled())
     Minimap.UpdateVisibility()
 end
 

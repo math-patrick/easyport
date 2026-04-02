@@ -1,14 +1,26 @@
 -- ============================================================================
--- Nozmie - Utility UI Module
+-- Nozmie - Utility UI Panel
 -- Main utility frame with tabs, item grid, and search
 -- ============================================================================
 local SharedUI = _G.Nozmie_SharedUI
 local ConfigHelpers = _G.Nozmie_ConfigHelpers
-local Helpers = _G.Nozmie_Helpers
-local Settings = _G.Nozmie_Settings
+local Helpers = require("utils.helpers")
+local State = require("core.state")
 local BannerController = _G.Nozmie_BannerController
 local ClickBehavior = _G.Nozmie_ClickBehavior
 local IconHandling = _G.Nozmie_IconHandling
+local Cooldowns = require("features.cooldowns")
+local Keystones = require("features.keystones")
+local Messaging = require("utils.messaging")
+local Favourites = require("ui.utilities.favourites")
+local ContextMenu = require("ui.utilities.context_menu")
+local KeystoneIndicators = require("ui.utilities.keystone_indicators")
+
+-- Local aliases for frequently used favourites functions
+local GetEntryID = Favourites.GetEntryID
+local IsFavourite = Favourites.IsFavourite
+local IsFavouriteEntry = Favourites.IsFavouriteEntry
+local ToggleFavourite = Favourites.ToggleFavourite
 
 local Locale = _G.Nozmie_Locale
 local addon = _G.Nozmie_Addon or {
@@ -51,180 +63,55 @@ local tabHasContentById = {}
 local tabOrder = {TAB_CURRENT_DUNGEONS, TAB_LEGACY_DUNGEONS, TAB_TELEPORTS, TAB_UTILITY, TAB_HEARTHSTONE}
 local showAllEntriesToggle
 local activeSearchQuery = ""
+local cooldownUpdateElapsed = 0
+local COOLDOWN_UPDATE_INTERVAL = 0.15
 
 local SHOW_ALL_ENTRIES_DB_KEY = "showAllEntriesInUtilityUI"
 local SHOW_ALL_TOYS_LEGACY_DB_KEY = "showAllToysInUtilityUI"
-local FAVOURITES_DB_KEY = "favourites"
-local WOWHEAD_POPUP_KEY = "NOZMIE_WOWHEAD_LINK"
-local wowheadPopupRegistered = false
-local pendingWowheadURL = nil
-local favouritesBootstrapped = false
-local contextMenuFrame = nil
-
-local function IsKeystoneIndicatorEnabled()
-    if Settings and Settings.Get then
-        return Settings.Get("showKeystoneIndicators") ~= false
-    end
-    return true
-end
 
 local function IsCombatLocked()
     return InCombatLockdown and InCombatLockdown()
 end
 
-local function NormalizeEntryToken(value)
-    if value == nil then
-        return nil
-    end
-    local text = tostring(value):lower()
-    text = text:gsub("[^%w]", "")
-    if text == "" then
-        return nil
-    end
-    return text
+local function GetSettings()
+    return _G.Nozmie_Settings
 end
 
-local function GetEntryID(entry)
-    if not entry then
-        return nil
-    end
-    if entry.spellID then
-        return "spell:" .. tostring(entry.spellID)
-    end
-    if entry.itemID then
-        return "item:" .. tostring(entry.itemID)
-    end
-    if entry.mountId then
-        return "mount:" .. tostring(entry.mountId)
-    end
-    if entry.petName then
-        local token = NormalizeEntryToken(entry.petName)
-        if token then
-            return "pet:" .. token
-        end
-    end
-    local fallback = NormalizeEntryToken(entry.name) or NormalizeEntryToken(entry.spellName) or
-                         NormalizeEntryToken(entry.destination)
-    if fallback then
-        return "name:" .. fallback
-    end
-    return nil
-end
-
-local function GetFavouritesTable()
-    if type(NozmieDB) ~= "table" then
-        NozmieDB = {}
-    end
-    if type(NozmieDB[FAVOURITES_DB_KEY]) ~= "table" then
-        NozmieDB[FAVOURITES_DB_KEY] = {}
-    end
-    return NozmieDB[FAVOURITES_DB_KEY]
-end
-
-local function IsFavourite(entryID)
-    if not entryID then
-        return false
-    end
-    return GetFavouritesTable()[entryID] == true
-end
-
-local function IsFavouriteEntry(entry)
-    return IsFavourite(GetEntryID(entry))
-end
-
-local function ToggleFavourite(entryID)
-    if not entryID then
-        return false
-    end
-    local favourites = GetFavouritesTable()
-    favourites[entryID] = not favourites[entryID]
-    return favourites[entryID] == true
-end
-
-local function SeedDefaultFavourites()
-    if favouritesBootstrapped then
-        return
-    end
-
-    local favourites = GetFavouritesTable()
-    if next(favourites) == nil and type(_G.Nozmie_Data) == "table" then
-        for _, entry in ipairs(_G.Nozmie_Data) do
-            if tonumber(entry and entry.current) == 1 then
-                local entryID = GetEntryID(entry)
-                if entryID then
-                    favourites[entryID] = true
-                end
-            end
-        end
-    end
-
-    favouritesBootstrapped = true
-end
-
-local function SortEntriesWithFavourites(list)
-    table.sort(list, function(a, b)
-        local aFav = IsFavouriteEntry(a)
-        local bFav = IsFavouriteEntry(b)
-        if aFav ~= bFav then
-            return aFav
-        end
-
-        local aRandom = a and (a.actionType == "random_hearthstone" or a.name == "Random Hearthstone")
-        local bRandom = b and (b.actionType == "random_hearthstone" or b.name == "Random Hearthstone")
-        if aRandom ~= bRandom then
-            return aRandom
-        end
-
-        local aUnavailable = not (IsUsableUtility and IsUsableUtility(a))
-        local bUnavailable = not (IsUsableUtility and IsUsableUtility(b))
-        if aUnavailable ~= bUnavailable then
-            return not aUnavailable
-        end
-        return ConfigHelpers.GetEntryName(a) < ConfigHelpers.GetEntryName(b)
-    end)
-end
-
-function UtilityUI.ToggleFavourite(entryID)
-    return ToggleFavourite(entryID)
-end
-
-function UtilityUI.IsFavourite(entryID)
-    return IsFavourite(entryID)
-end
-
-function UtilityUI.GetFavourites()
-    return GetFavouritesTable()
-end
-
-function UtilityUI.SortEntriesWithFavourites(list)
-    SortEntriesWithFavourites(list)
-end
+-- Favourites public API (delegates to ui.utilities.favourites)
+function UtilityUI.ToggleFavourite(entryID)   return Favourites.ToggleFavourite(entryID) end
+function UtilityUI.IsFavourite(entryID)        return Favourites.IsFavourite(entryID) end
+function UtilityUI.GetFavourites()             return Favourites.GetFavouritesTable() end
+function UtilityUI.SortEntriesWithFavourites(list) Favourites.SortEntriesWithFavourites(list) end
 
 local function GetShowAllEntriesEnabled()
-    if type(NozmieDB) ~= "table" then
-        return false
+    local Settings = GetSettings()
+    if Settings and Settings.Get then
+        local value = Settings.Get(SHOW_ALL_ENTRIES_DB_KEY)
+        if value ~= nil then
+            return value == true
+        end
+
+        return Settings.Get(SHOW_ALL_TOYS_LEGACY_DB_KEY) == true
     end
-    if NozmieDB[SHOW_ALL_ENTRIES_DB_KEY] ~= nil then
-        return NozmieDB[SHOW_ALL_ENTRIES_DB_KEY] == true
+
+    local value = State.GetSetting(SHOW_ALL_ENTRIES_DB_KEY)
+    if value ~= nil then
+        return value == true
     end
-    return NozmieDB[SHOW_ALL_TOYS_LEGACY_DB_KEY] == true
+
+    return State.GetSetting(SHOW_ALL_TOYS_LEGACY_DB_KEY) == true
 end
 
 local function SetShowAllEntriesEnabled(enabled)
-    if type(NozmieDB) ~= "table" then
-        NozmieDB = {}
+    local Settings = GetSettings()
+    if Settings and Settings.Set then
+        Settings.Set(SHOW_ALL_ENTRIES_DB_KEY, enabled == true)
+        Settings.Set(SHOW_ALL_TOYS_LEGACY_DB_KEY, enabled == true)
+        return
     end
-    NozmieDB[SHOW_ALL_ENTRIES_DB_KEY] = enabled == true
-    NozmieDB[SHOW_ALL_TOYS_LEGACY_DB_KEY] = enabled == true
-end
 
-local function UrlEncode(str)
-    str = tostring(str or "")
-    str = str:gsub("\n", " ")
-    str = str:gsub("([^%w%-_%.~ ])", function(char)
-        return string.format("%%%02X", string.byte(char))
-    end)
-    return str:gsub(" ", "+")
+    State.SetSetting(SHOW_ALL_ENTRIES_DB_KEY, enabled == true)
+    State.SetSetting(SHOW_ALL_TOYS_LEGACY_DB_KEY, enabled == true)
 end
 
 local function ApplyUtilityButtonCombatState(button)
@@ -261,180 +148,38 @@ local function IsUnavailableEntry(item)
     return not IsUsableUtility(item)
 end
 
-local function GetWowheadURL(item)
-    if not item then
-        return nil
-    end
-
-    if item.itemID then
-        return "https://www.wowhead.com/item=" .. tostring(item.itemID)
-    end
-    if item.spellID then
-        return "https://www.wowhead.com/spell=" .. tostring(item.spellID)
-    end
-
-    local searchText = item.spellName or item.name or item.destination
-    if searchText and searchText ~= "" then
-        return "https://www.wowhead.com/search?q=" .. UrlEncode(searchText)
-    end
-
-    return nil
-end
-
-local function EnsureWowheadPopupRegistered()
-    if wowheadPopupRegistered then
-        return
-    end
-
-    StaticPopupDialogs[WOWHEAD_POPUP_KEY] = {
-        text = Lstr("utility.entry.wowhead.popup.title",
-            "This entry is not available to use right now. Copy this Wowhead link to see details:"),
-        button1 = Lstr("utility.entry.wowhead.popup.close", "Close"),
-        hasEditBox = true,
-        editBoxWidth = 360,
-        timeout = 0,
-        whileDead = true,
-        hideOnEscape = true,
-        preferredIndex = 3,
-        OnShow = function(self)
-            local editBox = self.editBox or self:GetEditBox()
-            editBox:SetText(pendingWowheadURL or "")
-            editBox:SetAutoFocus(true)
-            editBox:HighlightText()
-        end,
-        OnAccept = function(self)
-            local editBox = self.editBox or self:GetEditBox()
-            editBox:SetText("")
-        end,
-        OnHide = function(self)
-            local editBox = self.editBox or self:GetEditBox()
-            editBox:SetText("")
-        end
-    }
-
-    wowheadPopupRegistered = true
-end
-
-local function OpenWowheadForEntry(item)
-    local url = GetWowheadURL(item)
-    if not url then
-        return
-    end
-
-    EnsureWowheadPopupRegistered()
-    pendingWowheadURL = url
-    StaticPopup_Show(WOWHEAD_POPUP_KEY)
-end
-
-local function EnsureContextMenuFrame()
-    if not contextMenuFrame then
-        contextMenuFrame = CreateFrame("Frame", "NozmieUtilityContextMenu", UIParent, "UIDropDownMenuTemplate")
-    end
-    return contextMenuFrame
-end
-
 local function BuildEntryContextMenuEntries(entryID, data)
-    local function ToggleFavouriteAction()
-        if not entryID then
-            return
-        end
-        ToggleFavourite(entryID)
-        BuildDataCache()
-        RefreshLayout()
-    end
-
-    local function AnnounceAction()
-        if Helpers and Helpers.AnnounceUtility then
-            Helpers.AnnounceUtility(data)
-        end
-    end
-
-    local function CopyWowheadAction()
-        OpenWowheadForEntry(data)
-    end
-
     local isFav = entryID and IsFavourite(entryID) or false
     local favLabel = isFav and Lstr("utility.favourites.remove", "Remove from favourites") or
                          Lstr("utility.favourites.add", "Add to favourites")
-
     return {
         {
             text = favLabel,
-            action = ToggleFavouriteAction
-        }, {
+            action = function()
+                if entryID then
+                    ToggleFavourite(entryID)
+                    BuildDataCache()
+                    RefreshLayout()
+                end
+            end
+        },
+        {
             text = Lstr("utility.context.announce", "Announce in chat"),
-            action = AnnounceAction
-        }, {
+            action = function()
+                Messaging.AnnounceUtility(data)
+            end
+        },
+        {
             text = Lstr("utility.context.copyWowhead", "Copy Wowhead link"),
-            action = CopyWowheadAction
-        }
-    }, CopyWowheadAction
-end
-
-local function OpenContextMenuWithEasyMenu(menuFrame, menuEntries)
-    if not EasyMenu then
-        return false
-    end
-
-    local menu = {}
-    for _, entry in ipairs(menuEntries) do
-        menu[#menu + 1] = {
-            text = entry.text,
-            notCheckable = true,
-            func = entry.action
-        }
-    end
-
-    EasyMenu(menu, menuFrame, "cursor", 0, 0, "MENU", 2)
-    return true
-end
-
-local function OpenContextMenuWithDropDown(menuFrame, menuEntries)
-    if not (UIDropDownMenu_Initialize and ToggleDropDownMenu and UIDropDownMenu_CreateInfo and UIDropDownMenu_AddButton) then
-        return false
-    end
-
-    UIDropDownMenu_Initialize(menuFrame, function(_, level)
-        if level ~= 1 then
-            return
-        end
-
-        for _, entry in ipairs(menuEntries) do
-            local info = UIDropDownMenu_CreateInfo()
-            info.text = entry.text
-            info.notCheckable = true
-            info.func = entry.action
-            UIDropDownMenu_AddButton(info, level)
-        end
-    end, "MENU")
-
-    ToggleDropDownMenu(1, nil, menuFrame, "cursor", 0, 0)
-    return true
+            action = function() ContextMenu.OpenWowheadForEntry(data) end
+        },
+    }, function() ContextMenu.OpenWowheadForEntry(data) end
 end
 
 local function ShowEntryContextMenu(button)
-    if not button then
-        return
-    end
-
-    local data = button.nozmieTooltipData
-    if not data then
-        return
-    end
-
-    local menuFrame = EnsureContextMenuFrame()
-    local menuEntries, fallbackAction = BuildEntryContextMenuEntries(button.nozmieEntryID, data)
-
-    if OpenContextMenuWithEasyMenu(menuFrame, menuEntries) then
-        return
-    end
-
-    if OpenContextMenuWithDropDown(menuFrame, menuEntries) then
-        return
-    end
-
-    -- If menu APIs are unavailable in this client build, keep right-click useful.
-    fallbackAction()
+    if not button or not button.nozmieTooltipData then return end
+    local menuEntries, fallback = BuildEntryContextMenuEntries(button.nozmieEntryID, button.nozmieTooltipData)
+    ContextMenu.ShowMenu(button, menuEntries, fallback)
 end
 
 local function IsTeleportEntry(item)
@@ -477,6 +222,19 @@ end
 
 local function GetEntryDescription(data)
     return data.destination or data.category or ""
+end
+
+local function GetEmptyStateMessage()
+    if activeSearchQuery ~= "" then
+        return string.format(Lstr("utility.search.empty", "No results for '%s'."), activeSearchQuery)
+    end
+
+    if selectedTab == TAB_CURRENT_DUNGEONS then
+        return Lstr("utility.favourites.empty", "No favourites yet") .. "\n" ..
+                   Lstr("utility.favourites.empty.hint", "Right-click an item and choose Add to favourites")
+    end
+
+    return Lstr("utility.tab.empty", "No entries available in this tab.")
 end
 
 local function ItemMatchesTab(item, tabId)
@@ -574,12 +332,10 @@ local function SetTabSelectedState(tab, selected)
 
     local fontString = tab.GetFontString and tab:GetFontString()
     if fontString then
-        if selected then
-            fontString:SetTextColor(1, 0.82, 0)
-        elseif not hasContent then
+        if not hasContent then
             fontString:SetTextColor(0.45, 0.45, 0.45)
         else
-            fontString:SetTextColor(0.7, 0.7, 0.7)
+            fontString:SetTextColor(1, 0.82, 0)
         end
     end
 
@@ -662,7 +418,7 @@ local function EnsureButton(index)
     if not button.nozmieUnavailableHooked then
         button:HookScript("PostClick", function(self, mouseButton)
             if self.nozmieUnavailable and mouseButton == "LeftButton" then
-                OpenWowheadForEntry(self.nozmieUnavailableData)
+                 ContextMenu.OpenWowheadForEntry(self.nozmieUnavailableData)
                 return
             end
 
@@ -740,147 +496,8 @@ local function UpdateFavouriteToggle(button, entry)
     button.nozmieLastFavState = isFav
 end
 
-local function EnsureKeystoneIndicatorVisuals(button)
-    if not button or not button.icon then
-        return
-    end
-
-    if not button.nozmieKeyBackGlow then
-        local backGlow = button:CreateTexture(nil, "BACKGROUND")
-        backGlow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
-        backGlow:SetBlendMode("ADD")
-        backGlow:SetPoint("CENTER", button.icon, "CENTER", 0, 0)
-        backGlow:SetSize(60, 60)
-        backGlow:SetAlpha(0)
-        button.nozmieKeyBackGlow = backGlow
-    end
-
-    if not button.nozmieKeyLayer then
-        local layer = CreateFrame("Frame", nil, button)
-        layer:SetPoint("TOPLEFT", button.icon, "TOPLEFT", 0, 0)
-        layer:SetPoint("BOTTOMRIGHT", button.icon, "BOTTOMRIGHT", 0, 0)
-
-        if button.cooldown and button.cooldown.GetFrameLevel then
-            layer:SetFrameLevel((button.cooldown:GetFrameLevel() or button:GetFrameLevel()) + 3)
-        else
-            layer:SetFrameLevel((button:GetFrameLevel() or 1) + 8)
-        end
-
-        button.nozmieKeyLayer = layer
-    end
-
-    if not button.nozmieKeyGlow then
-        local glow = button.nozmieKeyLayer:CreateTexture(nil, "OVERLAY")
-        glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
-        glow:SetBlendMode("ADD")
-        glow:SetPoint("CENTER", button.icon, "CENTER", 0, 0)
-        glow:SetSize(54, 54)
-        glow:SetAlpha(0)
-        button.nozmieKeyGlow = glow
-    end
-
-    if not button.nozmieKeyBadge then
-        local badge = button.nozmieKeyLayer:CreateTexture(nil, "OVERLAY")
-        badge:SetTexture("Interface\\Icons\\INV_Misc_Key_14")
-        badge:SetSize(12, 12)
-        badge:SetPoint("BOTTOMRIGHT", button.icon, "BOTTOMRIGHT", 2, -2)
-        badge:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        badge:SetAlpha(0)
-        button.nozmieKeyBadge = badge
-    end
-
-    if not button.nozmieKeyBadgeRing then
-        local ring = button.nozmieKeyLayer:CreateTexture(nil, "OVERLAY")
-        ring:SetTexture("Interface\\Buttons\\UI-Quickslot2")
-        ring:SetSize(18, 18)
-        ring:SetPoint("CENTER", button.nozmieKeyBadge, "CENTER", 0, 0)
-        ring:SetAlpha(0)
-        button.nozmieKeyBadgeRing = ring
-    end
-
-end
-
-local function ResetKeystoneIndicatorVisuals(button)
-    if not button then
-        return
-    end
-
-    if button.nozmieKeyBackGlow then
-        button.nozmieKeyBackGlow:SetAlpha(0)
-    end
-    if button.nozmieKeyGlow then
-        button.nozmieKeyGlow:SetAlpha(0)
-    end
-    if button.nozmieKeyBadge then
-        button.nozmieKeyBadge:SetAlpha(0)
-    end
-    if button.nozmieKeyBadgeRing then
-        button.nozmieKeyBadgeRing:SetAlpha(0)
-    end
-end
-
-local function ApplyKeystoneIndicator(button, entry)
-    if not button then
-        return
-    end
-
-    button.nozmieKeystoneTooltipText = nil
-    EnsureKeystoneIndicatorVisuals(button)
-
-    if not IsKeystoneIndicatorEnabled() or not Helpers or not Helpers.GetKeystoneOwnershipForEntry then
-        ResetKeystoneIndicatorVisuals(button)
-        return
-    end
-
-    local ownership = Helpers.GetKeystoneOwnershipForEntry(entry)
-    if not ownership then
-        ResetKeystoneIndicatorVisuals(button)
-        return
-    end
-
-    if Helpers.GetKeystoneOwnerTooltipText then
-        button.nozmieKeystoneTooltipText = Helpers.GetKeystoneOwnerTooltipText(entry)
-    end
-
-    local isOwn = ownership == "own"
-    if button.nozmieKeyBackGlow then
-        button.nozmieKeyBackGlow:SetVertexColor(isOwn and 1 or 0.65, isOwn and 0.78 or 0.88, isOwn and 0.24 or 1, 1)
-        button.nozmieKeyBackGlow:SetAlpha(0.14)
-    end
-    if button.nozmieKeyBadge then
-        button.nozmieKeyBadge:SetVertexColor(isOwn and 1 or 0.78, isOwn and 0.86 or 0.92, isOwn and 0.22 or 1, 1)
-        button.nozmieKeyBadge:SetAlpha(1)
-    end
-    if button.nozmieKeyBadgeRing then
-        button.nozmieKeyBadgeRing:SetAlpha(0.68)
-    end
-    if button.nozmieKeyGlow then
-        button.nozmieKeyGlow:SetVertexColor(isOwn and 1 or 0.65, isOwn and 0.76 or 0.85, isOwn and 0.22 or 1, 1)
-        button.nozmieKeyGlow:SetAlpha(0.22)
-    end
-end
-
 local function RefreshDungeonIndicators(dungeonID)
-    if not buttons then
-        return
-    end
-
-    local filterMapName
-    if dungeonID and C_ChallengeMode and C_ChallengeMode.GetMapUIInfo then
-        filterMapName = C_ChallengeMode.GetMapUIInfo(tonumber(dungeonID))
-        if type(filterMapName) == "string" then
-            filterMapName = filterMapName:lower()
-        end
-    end
-
-    for _, button in ipairs(buttons) do
-        if button:IsShown() and button.nozmieTooltipData and button.nozmieTooltipData.category == "M+ Dungeon" then
-            local entry = button.nozmieTooltipData
-            if not filterMapName or (entry.name and entry.name:lower() == filterMapName) then
-                ApplyKeystoneIndicator(button, entry)
-            end
-        end
-    end
+    KeystoneIndicators.RefreshAll(buttons, dungeonID)
 end
 
 function UtilityUI.Toggle()
@@ -917,8 +534,8 @@ function UtilityUI.UpdateDungeonUI(dungeonID)
 end
 
 IsUsableUtility = function(item)
-    if Helpers and Helpers.CanPlayerUseUtility then
-        return Helpers.CanPlayerUseUtility(item)
+    if Cooldowns and Cooldowns.CanPlayerUseUtility then
+        return Cooldowns.CanPlayerUseUtility(item)
     end
     if item.itemID then
         if C_Item and C_Item.GetItemCount then
@@ -935,7 +552,7 @@ end
 BuildDataCache = function()
     local showAllEntries = GetShowAllEntriesEnabled()
 
-    SeedDefaultFavourites()
+    Favourites.SeedDefaultFavourites()
 
     dataCache = {}
     if not _G.Nozmie_Data then
@@ -949,7 +566,7 @@ BuildDataCache = function()
         end
     end
 
-    SortEntriesWithFavourites(dataCache)
+    Favourites.SortEntriesWithFavourites(dataCache)
 end
 
 IsHearthstoneEntry = function(item)
@@ -978,7 +595,6 @@ local function BuildFilteredData()
         return
     end
 
-    -- If searching, search across all items; otherwise filter by tab
     if query and query ~= "" then
         for _, item in ipairs(dataCache) do
             if item and MatchesSearch(item, query) then
@@ -1165,10 +781,8 @@ local function LayoutButtons()
     end
 
     if #filteredData == 0 then
-        if frame and frame.nozmieEmptyStateText and selectedTab == TAB_CURRENT_DUNGEONS and activeSearchQuery == "" then
-            frame.nozmieEmptyStateText:SetText(Lstr("utility.favourites.empty", "No favourites yet") .. "\n" ..
-                                               Lstr("utility.favourites.empty.hint",
-                "Right-click an item and choose Add to favourites"))
+        if frame and frame.nozmieEmptyStateText then
+            frame.nozmieEmptyStateText:SetText(GetEmptyStateMessage())
             frame.nozmieEmptyStateText:Show()
         end
         content:SetHeight(ROW_HEIGHT + GRID_PADDING)
@@ -1183,12 +797,11 @@ local function LayoutButtons()
         local isUnavailable = IsUnavailableEntry(data)
         local isFav = IsFavouriteEntry(data)
 
-        -- Tooltip state should always be available, including while in combat.
         button.nozmieTooltipData = data
         button.nozmieUnavailable = isUnavailable
         button.nozmieUnavailableData = isUnavailable and data or nil
         UpdateFavouriteToggle(button, data)
-        ApplyKeystoneIndicator(button, data)
+        KeystoneIndicators.Apply(button, data)
         ApplyEntryTextAndStyle(button, data, isUnavailable, isFav)
 
         if not IsCombatLocked() then
@@ -1428,7 +1041,7 @@ EnsureFrame = function()
     end
 
     showAllEntriesToggle = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
-    showAllEntriesToggle:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 12, 4)
+    showAllEntriesToggle:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 2, 0)
     showAllEntriesToggle:SetScript("OnClick", function(self)
         SetShowAllEntriesEnabled(self:GetChecked())
         BuildDataCache()
@@ -1485,6 +1098,11 @@ EnsureFrame = function()
     end)
 
     frame:SetScript("OnUpdate", function(self, elapsed)
+        cooldownUpdateElapsed = cooldownUpdateElapsed + (elapsed or 0)
+        if cooldownUpdateElapsed < COOLDOWN_UPDATE_INTERVAL then
+            return
+        end
+        cooldownUpdateElapsed = 0
         UpdateCooldowns()
     end)
 
@@ -1510,9 +1128,7 @@ EnsureFrame = function()
         end
 
         if event == "GROUP_ROSTER_UPDATE" then
-            if Helpers and Helpers.CleanupGroupKeyReportsForCurrentGroup then
-                Helpers.CleanupGroupKeyReportsForCurrentGroup()
-            end
+            Keystones.CleanupGroupKeyReportsForCurrentGroup()
             RefreshDungeonIndicators(nil)
             return
         end

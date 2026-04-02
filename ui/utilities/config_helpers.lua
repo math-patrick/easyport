@@ -1,6 +1,5 @@
 local ConfigHelpers = {}
 
--- Icon helpers
 local petIconCache = {}
 function ConfigHelpers.GetPetIconByName(petName)
     if not petName or not C_PetJournal or not C_PetJournal.GetNumPets then return nil end
@@ -34,12 +33,10 @@ function ConfigHelpers.GetIconForEntry(data)
     return "Interface/Icons/INV_Misc_QuestionMark"
 end
 
--- Name helpers
 function ConfigHelpers.GetEntryName(data)
     return data.name or data.spellName or data.destination or "?"
 end
 
--- Macro/casting helpers
 function ConfigHelpers.GetMacroText(data)
     if data.macroText then return data.macroText end
     if data.spellID then return string.format("/cast %s", data.spellName or "") end
