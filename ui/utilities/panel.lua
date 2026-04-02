@@ -152,6 +152,22 @@ local function BuildEntryContextMenuEntries(entryID, data)
     local isFav = entryID and IsFavourite(entryID) or false
     local favLabel = isFav and Lstr("utility.favourites.remove", "Remove from favourites") or
                          Lstr("utility.favourites.add", "Add to favourites")
+
+    local function ShowSelectedBanner()
+        if not data then
+            return
+        end
+
+        if _G.Nozmie_ShowOptions then
+            _G.Nozmie_ShowOptions({data})
+            return
+        end
+
+        if _G.Nozmie_ShowLastBanner then
+            _G.Nozmie_ShowLastBanner()
+        end
+    end
+
     return {
         {
             text = favLabel,
@@ -162,6 +178,10 @@ local function BuildEntryContextMenuEntries(entryID, data)
                     RefreshLayout()
                 end
             end
+        },
+        {
+            text = Lstr("utility.context.showBanner", "Show banner"),
+            action = ShowSelectedBanner
         },
         {
             text = Lstr("utility.context.announce", "Announce in chat"),

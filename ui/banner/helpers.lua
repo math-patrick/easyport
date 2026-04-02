@@ -14,17 +14,23 @@ function BannerHelpers.SaveBannerPosition(frame)
     if not frame or not frame:IsVisible() then
         return
     end
-    
+
     local State = require("core.state")
-    
+    local point, relativeTo, relativePoint, xOfs, yOfs = frame:GetPoint()
+
     local position = {
-        point = frame:GetPoint() or "CENTER",
-        x = frame:GetLeft() or 0,
-        y = frame:GetBottom() or 0,
+        point = point or "CENTER",
+        relativePoint = relativePoint or "CENTER",
+        xOfs = tonumber(xOfs) or 0,
+        yOfs = tonumber(yOfs) or 0,
         width = frame:GetWidth() or 300,
         height = frame:GetHeight() or 100
     }
-    
+
+    if relativeTo and relativeTo ~= UIParent then
+        position.relativePoint = point or "CENTER"
+    end
+
     State.SetBannerPosition(position)
 end
 
