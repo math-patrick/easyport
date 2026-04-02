@@ -24,14 +24,15 @@ Locales\ptBR.lua
 # ============================================================================
 # LAYER 2: Static Data (no dependencies)
 # ============================================================================
-Data\class.lua
-Data\expansions.lua
-Data\hearthstones.lua
-Data\mage.lua
-Data\portals.lua
-Data\utility.lua
-Data\mounts.lua
-Data\easter_eggs.lua
+db\data\class.lua
+db\data\expansions.lua
+db\data\hearthstones.lua
+db\data\mage.lua
+db\data\portals.lua
+db\data\utility.lua
+db\data\mounts.lua
+db\data\pets.lua
+db\data\easter_eggs.lua
 data.lua
 
 # ============================================================================

@@ -17,7 +17,10 @@ end
 
 function ConfigHelpers.GetIconForEntry(data)
     if data.iconTexture then return data.iconTexture end
-    if data.petName then return ConfigHelpers.GetPetIconByName(data.petName) end
+    if data.actionType == "pet" then
+        local petIcon = ConfigHelpers.GetPetIconByName(data.name)
+        if petIcon then return petIcon end
+    end
     if data.mountId and C_MountJournal and C_MountJournal.GetMountInfoByID then
         local _, _, icon = C_MountJournal.GetMountInfoByID(data.mountId)
         if icon then return icon end
@@ -41,7 +44,7 @@ function ConfigHelpers.GetMacroText(data)
     if data.macroText then return data.macroText end
     if data.spellID then return string.format("/cast %s", data.spellName or "") end
     if data.itemID then return string.format("/use item:%d", data.itemID) end
-    if data.petName then return string.format("/summonpet %s", data.petName) end
+    if data.actionType == "pet" and data.name then return string.format("/summonpet %s", data.name) end
     return nil
 end
 

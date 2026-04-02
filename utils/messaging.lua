@@ -3,6 +3,8 @@
 -- Handle announcement creation, transmission, and tracking
 -- ============================================================================
 
+local Constants = require("utils.constants")
+
 local Messaging = {}
 
 -- ============================================================================
@@ -22,7 +24,7 @@ function Messaging.GetActionAndNoun(data)
     elseif actionType == "item" then
         return "use", data.name or "item"
     elseif actionType == "pet" then
-        return "summon", data.petName or "pet"
+        return "summon", data.name or "pet"
     elseif actionType == "mount" then
         return "mount", data.name or "mount"
     elseif actionType == "toy" then
@@ -49,7 +51,7 @@ end
 
 -- Local storage for recent announcements
 local recentAnnouncements = {}
-local ANNOUNCEMENT_COOLDOWN = 3  -- Seconds
+local ANNOUNCEMENT_COOLDOWN = Constants.ANNOUNCE_DEDUP_WINDOW or 3
 
 -- Mark an announcement as sent
 function Messaging.MarkAnnounce(key)
@@ -127,7 +129,7 @@ function Messaging.FormatAnnounceMessage(data)
     local prefix = string.format("[%s] ", Lstr("addon.name", "Nozmie"))
     local destination = NormalizeAnnounceLabel(data.destination or data.name)
     local castName = NormalizeAnnounceLabel(data.spellName or data.name)
-    local summonName = NormalizeAnnounceLabel(data.destination or data.name or data.petName)
+    local summonName = NormalizeAnnounceLabel(data.destination or data.name)
 
     if isTeleport and destination ~= "" then
         return prefix .. string.format(Lstr("announce.teleporting", "Teleporting to %s!"), destination)

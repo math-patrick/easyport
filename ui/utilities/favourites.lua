@@ -25,8 +25,8 @@ function Favourites.GetEntryID(entry)
     if entry.spellID then return "spell:" .. tostring(entry.spellID) end
     if entry.itemID  then return "item:"  .. tostring(entry.itemID)  end
     if entry.mountId then return "mount:" .. tostring(entry.mountId) end
-    if entry.petName then
-        local token = NormalizeToken(entry.petName)
+    if entry.actionType == "pet" and entry.name then
+        local token = NormalizeToken(entry.name)
         if token then return "pet:" .. token end
     end
     local fallback = NormalizeToken(entry.name) or NormalizeToken(entry.spellName) or NormalizeToken(entry.destination)

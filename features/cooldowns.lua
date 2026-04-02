@@ -81,12 +81,13 @@ end
 
 -- Check if player has a specific pet
 local function canUsePet(data)
-    if not C_PetJournal or not C_PetJournal.GetNumPets or not data.petName then
+    local petName = data and data.name
+    if not C_PetJournal or not C_PetJournal.GetNumPets or not petName then
         return false
     end
     for i = 1, C_PetJournal.GetNumPets() do
         local _, _, _, customName, _, _, _, petNameFromJournal = C_PetJournal.GetPetInfoByIndex(i)
-        if petNameFromJournal == data.petName or customName == data.petName then
+        if petNameFromJournal == petName or customName == petName then
             return true
         end
     end

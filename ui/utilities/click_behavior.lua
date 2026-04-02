@@ -110,10 +110,12 @@ function ClickBehavior.ApplyActionAttributes(frame, data)
     end
 
     if data.actionType == "pet" then
+        local petName = data.name or ""
+        local macro = data.macrotext or (petName ~= "" and ("/summonpet " .. petName) or "")
         frame:SetAttribute("type", "macro")
         frame:SetAttribute("type1", "macro")
-        frame:SetAttribute("macrotext", data.macrotext or "")
-        frame:SetAttribute("macrotext1", data.macrotext or "")
+        frame:SetAttribute("macrotext", macro)
+        frame:SetAttribute("macrotext1", macro)
         return
     end
 

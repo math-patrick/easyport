@@ -6,13 +6,14 @@ local SharedUI = {}
 -- Icon logic (was in BannerController)
 function SharedUI.GetIconForEntry(item)
     if not item then return "Interface/Icons/INV_Misc_QuestionMark" end
-    if item.macrotext or item.actionType == "pet" then
+    if item.actionType == "pet" then
         if item.iconTexture then return item.iconTexture end
-        if item.petName and C_PetJournal and C_PetJournal.GetNumPets then
+        local petName = item.name
+        if petName and C_PetJournal and C_PetJournal.GetNumPets then
             local numPets = C_PetJournal.GetNumPets()
             for index = 1, numPets do
                 local _, _, _, customName, _, _, _, petNameFromJournal, icon = C_PetJournal.GetPetInfoByIndex(index)
-                if petNameFromJournal == item.petName or customName == item.petName then
+                if petNameFromJournal == petName or customName == petName then
                     return icon
                 end
             end
@@ -56,7 +57,8 @@ function SharedUI.ApplyActionAttributes(button, item)
     button:SetAttribute("item", nil)
     button:SetAttribute("item1", nil)
     if item.macrotext or item.actionType == "pet" then
-        local macrotext = item.macrotext or (item.petName and ("/summonpet " .. item.petName) or "")
+        local petName = item.name
+        local macrotext = item.macrotext or (petName and ("/summonpet " .. petName) or "")
         button:SetAttribute("type", "macro")
         button:SetAttribute("type1", "macro")
         button:SetAttribute("macrotext", macrotext)

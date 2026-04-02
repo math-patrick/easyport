@@ -20,6 +20,7 @@ local function AggregateData()
         _G.ServiceToys or {},
         _G.DelveTeleports or {},
         _G.Mounts or {},
+        _G.UtilityPets or {},
         _G.EasterEggs or {}
     }
     

@@ -19,13 +19,13 @@ UtilityPets = {{
     destination = "Cooking Fire",
     keywords = {"cooking fire"}
 }, {
-    name = "Argent Squire",
-    itemID = 44998,
-    petID= 214,
-    spellName = "Argent Squire",
+    name = "Alvin the Anvil",
+    itemID = 191886,
+    petID = 3274,
+    spellName = "Alvin the Anvil",
     actionType = "pet",
     category = "Utility",
     cooldown = "None",
-    destination = "Bank & Vendor",
-    keywords = {"bank", "vendor", "mailbox", "mail"}
+    destination = "anvil",
+    keywords = {"anvil"}
 }}

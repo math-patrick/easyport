@@ -15,6 +15,7 @@ AddAll(TeleportToys)
 AddAll(ServiceToys)
 AddAll(DelveTeleports)
 AddAll(Mounts)
+AddAll(UtilityPets)
 AddAll(EasterEggs)
 
 if _G.Nozmie_Locale and _G.Nozmie_Locale.ApplyKeywordAliases then
