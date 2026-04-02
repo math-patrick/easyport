@@ -33,6 +33,108 @@ local chatEventKeys = {
     CHAT_MSG_BN_WHISPER = "bn_whisper"
 }
 
+local groupKeyChannels = {
+    CHAT_MSG_PARTY = "PARTY",
+    CHAT_MSG_PARTY_LEADER = "PARTY",
+    CHAT_MSG_RAID = "RAID",
+    CHAT_MSG_INSTANCE_CHAT = "INSTANCE_CHAT",
+    CHAT_MSG_GUILD = "GUILD"
+}
+local recentKeyRequestsBySender = {}
+local recentParsedKeyMessages = {}
+
+local function NormalizePlayerName(name)
+    if not name or name == "" then
+        return nil
+    end
+    return name:match("([^-]+)") or name
+end
+
+local function RefreshGroupKeysUI()
+    local utilityUI = _G.Nozmie_UtilityUI
+    if utilityUI and utilityUI.RefreshGroupKeys then
+        utilityUI.RefreshGroupKeys()
+    end
+end
+
+local function UpdateDungeonUI(dungeonID)
+    local utilityUI = _G.Nozmie_UtilityUI
+    if utilityUI and utilityUI.UpdateDungeonUI then
+        utilityUI.UpdateDungeonUI(dungeonID)
+    else
+        RefreshGroupKeysUI()
+    end
+end
+
+local function ShouldSkipDuplicateKeyMessage(sender, message)
+    if not sender or not message then
+        return false
+    end
+    local key = string.format("%s|%s", sender, message)
+    local now = GetTime()
+    local lastSeen = recentParsedKeyMessages[key]
+    if lastSeen and (now - lastSeen) < 1 then
+        return true
+    end
+    recentParsedKeyMessages[key] = now
+    return false
+end
+
+local function HandleGroupKeyMessage(event, message, sender)
+    local channel = groupKeyChannels[event]
+    if not channel or not message then
+        return false
+    end
+
+    local trimmed = message:trim()
+    local lowered = trimmed:lower()
+    if lowered == "!keys" then
+        if Settings and Settings.Get and Settings.Get("disableAutoKeyResponse") then
+            return true
+        end
+
+        local senderName = NormalizePlayerName(sender) or "unknown"
+        local now = GetTime()
+        local lastSeen = recentKeyRequestsBySender[senderName]
+        if lastSeen and (now - lastSeen) < 1.5 then
+            return true
+        end
+        recentKeyRequestsBySender[senderName] = now
+
+        if Helpers and Helpers.SendOwnedKeystoneToChannel then
+            Helpers.SendOwnedKeystoneToChannel(channel)
+            RefreshGroupKeysUI()
+        end
+        return true
+    end
+
+    if lowered:find("!nozmie", 1, true) == 1 or lowered:find("!mykey", 1, true) == 1 then
+        local report = Helpers and Helpers.ParseKeystoneReportMessage and Helpers.ParseKeystoneReportMessage(trimmed)
+        if report and Helpers and Helpers.RecordGroupKeyReport then
+            if report.hasKey then
+                Helpers.RecordGroupKeyReport(sender, report.mapName, report.level, report.mapID, report.link)
+            else
+                Helpers.RecordGroupKeyReport(sender, nil, nil)
+            end
+            RefreshGroupKeysUI()
+            return true
+        end
+    end
+
+    -- Astral Keys and similar addons often post raw keystone links in chat.
+    local trackLinks = Settings and Settings.Get and Settings.Get("trackGroupKeysFromChatLinks")
+    if trackLinks ~= false and trimmed:find("|Hkeystone:", 1, true) and not ShouldSkipDuplicateKeyMessage(sender, trimmed) then
+        local parsed = Helpers and Helpers.ParseKeystoneLink and Helpers.ParseKeystoneLink(trimmed, sender)
+        if parsed and parsed.dungeonID and Helpers and Helpers.StoreDetectedKey then
+            Helpers.StoreDetectedKey(parsed.playerName or sender, parsed.dungeonID, parsed.level, parsed.link)
+            UpdateDungeonUI(parsed.dungeonID)
+            return true
+        end
+    end
+
+    return false
+end
+
 local function QueueMatches(matches)
     for _, match in ipairs(matches) do
         table.insert(pendingMatches, match)
@@ -62,6 +164,10 @@ end
 local function OnChatMessage(self, event, message, sender)
     -- Check if addon is enabled
     if not Settings.Get("enabled") then
+        return false
+    end
+
+    if HandleGroupKeyMessage(event, message, sender) then
         return false
     end
 
@@ -161,12 +267,27 @@ local function HandleCommand(args)
         print("|cff00ff00Nozmie:|r " .. message)
     elseif cmd == "last" then
         _G.Nozmie_ShowLastBanner()
+    elseif cmd == "key" or cmd == "keystone" or cmd == "mykey" then
+        local keyInfo = Helpers and Helpers.GetOwnedKeystoneInfo and Helpers.GetOwnedKeystoneInfo()
+        if not keyInfo then
+            print("|cff00ff00Nozmie:|r " .. Lstr("cmd.keystone.none", "No keystone found in your bags."))
+        else
+            local levelSuffix = ""
+            if type(keyInfo.level) == "number" and keyInfo.level > 0 then
+                levelSuffix = string.format(Lstr("cmd.keystone.levelSuffix", " (+%d)"), keyInfo.level)
+            end
+            local message = string.format(Lstr("cmd.keystone.current", "Current keystone: %s%s"), keyInfo.mapName,
+                levelSuffix)
+            print("|cff00ff00Nozmie:|r " .. message)
+        end
     elseif cmd == "help" then
         print("|cff00ff00Nozmie:|r " .. Lstr("cmd.title", "Commands:"))
         print(Lstr("cmd.open", "  /noz - Open utility UI"))
         print(Lstr("cmd.openAlt", "  /noz settings - Open settings"))
         print(Lstr("cmd.minimap", "  /noz minimap - Toggle minimap icon"))
         print(Lstr("cmd.last", "  /noz last - Show last banner"))
+        print(Lstr("cmd.key", "  /noz key - Show current keystone dungeon"))
+        print(Lstr("cmd.keys", "  !keys (party/raid/guild chat) - Request everyone's keystone"))
         print(Lstr("cmd.blacklist", "  /noz blacklist - View current blacklist"))
         print(Lstr("cmd.blacklistSet", "  /noz blacklist <words> - Set blacklisted words (comma-separated)"))
     end
@@ -198,7 +319,15 @@ end
 
 addon:RegisterEvent("ADDON_LOADED")
 addon:RegisterEvent("PLAYER_REGEN_ENABLED")
+addon:RegisterEvent("GROUP_ROSTER_UPDATE")
 addon:SetScript("OnEvent", function(self, event, loadedAddon)
+    if event == "GROUP_ROSTER_UPDATE" then
+        if Helpers and Helpers.CleanupGroupKeyReportsForCurrentGroup then
+            Helpers.CleanupGroupKeyReportsForCurrentGroup()
+        end
+        RefreshGroupKeysUI()
+        return
+    end
     if event == "PLAYER_REGEN_ENABLED" then
         if #pendingMatches > 0 and Settings.Get("showBanner") then
             local queued = pendingMatches
