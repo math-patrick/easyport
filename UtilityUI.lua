@@ -692,7 +692,7 @@ local function EnsureButton(index)
     if not button.favouriteToggle then
         local favouriteToggle = CreateFrame("Button", nil, button)
         favouriteToggle:SetSize(16, 16)
-        favouriteToggle:SetPoint("TOPRIGHT", button.icon, "TOPRIGHT", 3, 3)
+        favouriteToggle:SetPoint("TOPRIGHT", button.icon, "TOPRIGHT", 6, 6)
         favouriteToggle:EnableMouse(false)
         if button.cooldown and button.cooldown.GetFrameLevel then
             favouriteToggle:SetFrameLevel((button.cooldown:GetFrameLevel() or button:GetFrameLevel()) + 3)

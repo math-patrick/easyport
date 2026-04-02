@@ -108,6 +108,7 @@ function SettingsModule.InitializeDB()
         detectInRaid = true,
         detectInGuild = false,
         detectInWhisper = true,
+        disableAutoKeyResponse = false,
         trackGroupKeysFromChatLinks = true,
         showKeystoneIndicators = true,
         suppressInInstances = false,
@@ -303,6 +304,13 @@ function SettingsModule.CreatePanel()
     CreateMultiSelectDropdown(category, "NOZMIE_CHAT_CHANNELS", "detectChatList",
         Lstr("settings.detectChat.label", "Chat Channels"), GetChatOptions, Lstr("settings.detectChat.tooltip",
             "Select chat channels to monitor for teleport requests."))
+
+    local variable, name, tooltip = "disableAutoKeyResponse", Lstr("settings.disableAutoKeyResponse",
+        "Do not auto-share my key on !keys"), Lstr("settings.disableAutoKeyResponse.tooltip",
+        "When enabled, Nozmie will ignore !keys requests and will not post your keystone in chat.")
+    local setting = _G.Settings.RegisterAddOnSetting(category, "Nozmie_" .. variable, variable, NozmieDB,
+        _G.Settings.VarType.Boolean, name, false)
+    _G.Settings.CreateCheckbox(category, setting, tooltip)
 
     local variable, name, tooltip = "trackGroupKeysFromChatLinks", Lstr("settings.trackGroupKeysFromChatLinks",
         "Track group keys from chat links"), Lstr("settings.trackGroupKeysFromChatLinks.tooltip",

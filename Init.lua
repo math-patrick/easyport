@@ -37,7 +37,8 @@ local groupKeyChannels = {
     CHAT_MSG_PARTY = "PARTY",
     CHAT_MSG_PARTY_LEADER = "PARTY",
     CHAT_MSG_RAID = "RAID",
-    CHAT_MSG_INSTANCE_CHAT = "INSTANCE_CHAT"
+    CHAT_MSG_INSTANCE_CHAT = "INSTANCE_CHAT",
+    CHAT_MSG_GUILD = "GUILD"
 }
 local recentKeyRequestsBySender = {}
 local recentParsedKeyMessages = {}
@@ -88,6 +89,10 @@ local function HandleGroupKeyMessage(event, message, sender)
     local trimmed = message:trim()
     local lowered = trimmed:lower()
     if lowered == "!keys" then
+        if Settings and Settings.Get and Settings.Get("disableAutoKeyResponse") then
+            return true
+        end
+
         local senderName = NormalizePlayerName(sender) or "unknown"
         local now = GetTime()
         local lastSeen = recentKeyRequestsBySender[senderName]
@@ -282,7 +287,7 @@ local function HandleCommand(args)
         print(Lstr("cmd.minimap", "  /noz minimap - Toggle minimap icon"))
         print(Lstr("cmd.last", "  /noz last - Show last banner"))
         print(Lstr("cmd.key", "  /noz key - Show current keystone dungeon"))
-        print(Lstr("cmd.keys", "  !keys (party/raid chat) - Request everyone's keystone"))
+        print(Lstr("cmd.keys", "  !keys (party/raid/guild chat) - Request everyone's keystone"))
         print(Lstr("cmd.blacklist", "  /noz blacklist - View current blacklist"))
         print(Lstr("cmd.blacklistSet", "  /noz blacklist <words> - Set blacklisted words (comma-separated)"))
     end
