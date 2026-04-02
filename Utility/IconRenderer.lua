@@ -67,6 +67,12 @@ function IconRenderer.ApplyTooltip(iconFrame)
                 GameTooltip:AddLine(data.destination, 0.8, 0.8, 0.8)
             end
         end
+
+        local keyText = self.nozmieKeystoneTooltipText or parent.nozmieKeystoneTooltipText
+        if keyText and keyText ~= "" then
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine(keyText, 0.98, 0.9, 0.35, true)
+        end
         GameTooltip:Show()
     end)
     iconFrame.nozmieTooltipHooked = true

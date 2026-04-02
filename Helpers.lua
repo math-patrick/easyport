@@ -3,6 +3,8 @@ local lastAnnounce = {
     message = nil,
     time = 0
 }
+local groupKeyReports = {}
+local mapNameByIDCache = {}
 local Locale = _G.Nozmie_Locale
 local function Lstr(key, fallback)
     if Locale and Locale.GetString then
@@ -248,6 +250,483 @@ function Helpers.GetCooldownRemaining(data)
         end
     end
     return 0
+end
+
+function Helpers.GetOwnedKeystoneInfo()
+    if not C_MythicPlus or not C_MythicPlus.GetOwnedKeystoneChallengeMapID then
+        return nil
+    end
+
+    local mapID = C_MythicPlus.GetOwnedKeystoneChallengeMapID()
+    if not mapID or mapID == 0 then
+        return nil
+    end
+
+    local mapName
+    if C_ChallengeMode and C_ChallengeMode.GetMapUIInfo then
+        local name = C_ChallengeMode.GetMapUIInfo(mapID)
+        if type(name) == "string" and name ~= "" then
+            mapName = name
+        end
+    end
+
+    local level
+    if C_MythicPlus and C_MythicPlus.GetOwnedKeystoneLevel then
+        level = C_MythicPlus.GetOwnedKeystoneLevel()
+    end
+
+    return {
+        mapID = mapID,
+        mapName = mapName or tostring(mapID),
+        level = level
+    }
+end
+
+local function NormalizePlayerName(name)
+    if not name or name == "" then
+        return nil
+    end
+    return name:match("([^-]+)") or name
+end
+
+local function NormalizeMapName(name)
+    if not name or name == "" then
+        return nil
+    end
+    local normalized = name:lower()
+    normalized = normalized:gsub("[^%w]", "")
+    return normalized
+end
+
+local function NormalizeDungeonName(name)
+    local normalized = NormalizeMapName(name)
+    if not normalized then
+        return nil
+    end
+    normalized = normalized:gsub("^the", "")
+    return normalized
+end
+
+local function DungeonNamesMatch(a, b)
+    local left = NormalizeDungeonName(a)
+    local right = NormalizeDungeonName(b)
+    if not left or not right then
+        return false
+    end
+    return left == right or left:find(right, 1, true) ~= nil or right:find(left, 1, true) ~= nil
+end
+
+local function GetMapNameFromID(mapID)
+    if not mapID or not C_ChallengeMode or not C_ChallengeMode.GetMapUIInfo then
+        return nil
+    end
+    if mapNameByIDCache[mapID] ~= nil then
+        return mapNameByIDCache[mapID]
+    end
+    local name = C_ChallengeMode.GetMapUIInfo(mapID)
+    if type(name) == "string" and name ~= "" then
+        mapNameByIDCache[mapID] = name
+        return name
+    end
+    mapNameByIDCache[mapID] = false
+    return nil
+end
+
+local function EntryMatchesKeystone(entry, report)
+    if not entry or not report then
+        return false
+    end
+
+    if report.mapName and DungeonNamesMatch(report.mapName, entry.name) then
+        return true
+    end
+
+    if type(entry.keywords) == "table" and report.mapName then
+        for _, keyword in ipairs(entry.keywords) do
+            if DungeonNamesMatch(report.mapName, keyword) then
+                return true
+            end
+        end
+    end
+
+    if report.mapID then
+        local mappedName = GetMapNameFromID(report.mapID)
+        if mappedName and DungeonNamesMatch(mappedName, entry.name) then
+            return true
+        end
+        if mappedName and type(entry.keywords) == "table" then
+            for _, keyword in ipairs(entry.keywords) do
+                if DungeonNamesMatch(mappedName, keyword) then
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+function Helpers.ParseKeystoneLink(message, sender)
+    local parsed = Helpers.ParseKeystoneReportMessage(message)
+    if not parsed or not parsed.hasKey then
+        return nil
+    end
+
+    return {
+        playerName = NormalizePlayerName(sender or UnitName("player")),
+        dungeonID = parsed.mapID,
+        level = tonumber(parsed.level),
+        mapName = parsed.mapName,
+        link = parsed.link
+    }
+end
+
+function Helpers.GetOwnedKeystoneLink()
+    if C_MythicPlus and C_MythicPlus.GetOwnedKeystoneLink then
+        local link = C_MythicPlus.GetOwnedKeystoneLink()
+        if type(link) == "string" and link ~= "" then
+            return link
+        end
+    end
+
+    if C_Container and C_Container.GetContainerNumSlots and C_Container.GetContainerItemLink then
+        for bag = 0, NUM_BAG_SLOTS do
+            local slots = C_Container.GetContainerNumSlots(bag) or 0
+            for slot = 1, slots do
+                local link = C_Container.GetContainerItemLink(bag, slot)
+                if type(link) == "string" and link:find("|Hkeystone:", 1, true) then
+                    return link
+                end
+            end
+        end
+    end
+
+    return nil
+end
+
+function Helpers.GetKeystoneInfoFromLink(link)
+    if type(link) ~= "string" then
+        return nil
+    end
+
+    local payload = link:match("|Hkeystone:([^|]+)|h")
+    if not payload then
+        return nil
+    end
+
+    local numericFields = {}
+    for token in payload:gmatch("[^:]+") do
+        local number = tonumber(token)
+        if number then
+            numericFields[#numericFields + 1] = number
+        end
+    end
+
+    local mapID
+    local mapName
+    local mapIndex
+    for index, value in ipairs(numericFields) do
+        local candidateName = GetMapNameFromID(value)
+        if candidateName then
+            mapID = value
+            mapName = candidateName
+            mapIndex = index
+            break
+        end
+    end
+
+    local level
+    if mapIndex then
+        for index = mapIndex + 1, #numericFields do
+            local value = numericFields[index]
+            if value >= 2 and value <= 40 then
+                level = value
+                break
+            end
+        end
+    end
+
+    if not level then
+        for _, value in ipairs(numericFields) do
+            if value >= 2 and value <= 40 and value ~= mapID then
+                level = value
+                break
+            end
+        end
+    end
+
+    if (not level or level <= 0) and link then
+        local textLevel = link:match("%((%d+)%)") or link:match("%+(%d+)")
+        level = tonumber(textLevel) or level
+    end
+
+    return {
+        mapID = mapID,
+        mapName = mapName,
+        level = level,
+        link = link
+    }
+end
+
+function Helpers.ClearGroupKeyReports()
+    wipe(groupKeyReports)
+end
+
+function Helpers.RecordGroupKeyReport(playerName, mapName, level, mapID, link)
+    local shortName = NormalizePlayerName(playerName)
+    if not shortName then
+        return
+    end
+
+    local resolvedMapName = mapName
+    if (not resolvedMapName or resolvedMapName == "") and mapID then
+        resolvedMapName = GetMapNameFromID(mapID)
+    end
+
+    groupKeyReports[shortName] = {
+        playerName = shortName,
+        mapName = resolvedMapName,
+        level = level,
+        mapID = mapID,
+        link = link,
+        timestamp = GetTime()
+    }
+end
+
+function Helpers.StoreDetectedKey(playerName, dungeonID, level, link)
+    local shortName = NormalizePlayerName(playerName)
+    if not shortName then
+        return false
+    end
+
+    local mapID = tonumber(dungeonID)
+    if not mapID or mapID <= 0 then
+        return false
+    end
+
+    local mapName = GetMapNameFromID(mapID)
+    Helpers.RecordGroupKeyReport(shortName, mapName, tonumber(level), mapID, link)
+    return true
+end
+
+function Helpers.GetGroupKeyReports()
+    local reports = {}
+    for _, info in pairs(groupKeyReports) do
+        reports[#reports + 1] = info
+    end
+
+    table.sort(reports, function(a, b)
+        local levelA = tonumber(a and a.level) or -1
+        local levelB = tonumber(b and b.level) or -1
+        if levelA ~= levelB then
+            return levelA > levelB
+        end
+        local nameA = a and a.playerName or ""
+        local nameB = b and b.playerName or ""
+        return nameA < nameB
+    end)
+
+    return reports
+end
+
+function Helpers.SendOwnedKeystoneToChannel(channel)
+    if not channel or channel == "" then
+        return false
+    end
+
+    local keyInfo = Helpers.GetOwnedKeystoneInfo()
+    local message
+    if keyInfo and keyInfo.level and keyInfo.level > 0 then
+        local link = Helpers.GetOwnedKeystoneLink()
+        if link and link ~= "" then
+            message = string.format("!nozmie %s", link)
+        else
+            message = string.format("!nozmie %s +%d", keyInfo.mapName, keyInfo.level)
+        end
+    else
+        message = "!nozmie none"
+    end
+
+    C_ChatInfo.SendChatMessage(message, channel)
+
+    local playerName = UnitName("player")
+    if keyInfo and keyInfo.level and keyInfo.level > 0 then
+        Helpers.RecordGroupKeyReport(playerName, keyInfo.mapName, keyInfo.level, keyInfo.mapID,
+            Helpers.GetOwnedKeystoneLink())
+    else
+        Helpers.RecordGroupKeyReport(playerName, nil, nil)
+    end
+
+    return true
+end
+
+function Helpers.ParseKeystoneReportMessage(message)
+    if type(message) ~= "string" then
+        return nil
+    end
+
+    local trimmed = message:match("^%s*(.-)%s*$")
+    if not trimmed or trimmed == "" then
+        return nil
+    end
+
+    local lowered = trimmed:lower()
+    if lowered == "!nozmie none" or lowered == "!mykey none" then
+        return {
+            hasKey = false
+        }
+    end
+
+    local cleanLink = trimmed:match("(%|c.-%|Hkeystone:[^|]+%|h%[.-%]%|h%|r)")
+    if not cleanLink then
+        cleanLink = trimmed:match("(%|Hkeystone:[^|]+%|h%[.-%]%|h)")
+    end
+    if cleanLink then
+        local info = Helpers.GetKeystoneInfoFromLink(cleanLink)
+        if info then
+            return {
+                hasKey = true,
+                mapName = info.mapName,
+                level = info.level,
+                mapID = info.mapID,
+                link = cleanLink
+            }
+        end
+    end
+
+    local mapName, level = trimmed:match("^!nozmie%s+(.+)%s+%+(%d+)%s*$")
+    if not (mapName and level) then
+        mapName, level = trimmed:match("^!mykey%s+(.+)%s+%+(%d+)%s*$")
+    end
+    if mapName and level then
+        return {
+            hasKey = true,
+            mapName = mapName,
+            level = tonumber(level)
+        }
+    end
+
+    return nil
+end
+
+function Helpers.GetKeystoneOwnershipForEntry(entry)
+    if not entry or entry.category ~= "M+ Dungeon" then
+        return nil
+    end
+
+    local entryName = entry.name
+    if not entryName then
+        return nil
+    end
+
+    local own = Helpers.GetOwnedKeystoneInfo()
+    if own and EntryMatchesKeystone(entry, own) then
+        return "own"
+    end
+
+    local reports = Helpers.GetGroupKeyReports()
+    local playerName = NormalizePlayerName(UnitName("player"))
+    for _, report in ipairs(reports) do
+        if report and report.playerName ~= playerName and EntryMatchesKeystone(entry, report) then
+            return "group"
+        end
+    end
+
+    return nil
+end
+
+function Helpers.GetGroupKeystoneOwnersForEntry(entry)
+    local owners = {}
+    if not entry or entry.category ~= "M+ Dungeon" then
+        return owners
+    end
+
+    local entryName = entry.name
+    if not entryName then
+        return owners
+    end
+
+    local playerName = NormalizePlayerName(UnitName("player"))
+    local reports = Helpers.GetGroupKeyReports()
+    for _, report in ipairs(reports) do
+        if report and report.playerName ~= playerName and EntryMatchesKeystone(entry, report) then
+            owners[#owners + 1] = {
+                playerName = report.playerName,
+                level = report.level,
+                mapName = report.mapName
+            }
+        end
+    end
+
+    return owners
+end
+
+function Helpers.GetKeystoneOwnerTooltipText(entry)
+    if not entry or entry.category ~= "M+ Dungeon" then
+        return nil
+    end
+
+    local ownership = Helpers.GetKeystoneOwnershipForEntry(entry)
+    if ownership == "own" then
+        local own = Helpers.GetOwnedKeystoneInfo()
+        if own and own.level and own.level > 0 then
+            return string.format("You have a +%d key", own.level)
+        end
+        return "You have a key"
+    end
+
+    if ownership == "group" then
+        local owners = Helpers.GetGroupKeystoneOwnersForEntry(entry)
+        if #owners == 0 then
+            return "Party member has a key"
+        end
+        local topOwner = owners[1]
+        local level = tonumber(topOwner and topOwner.level) or 0
+        local playerName = (topOwner and topOwner.playerName) or "?"
+        if level > 0 then
+            return string.format("Party member (%s) has a +%d key", playerName, level)
+        end
+        return string.format("Party member (%s) has a key", playerName)
+    end
+
+    return nil
+end
+
+function Helpers.CleanupGroupKeyReportsForCurrentGroup()
+    local playerName = NormalizePlayerName(UnitName("player"))
+    if not Helpers.IsInAnyGroup() then
+        wipe(groupKeyReports)
+        return
+    end
+
+    local allowed = {}
+    if playerName then
+        allowed[playerName] = true
+    end
+
+    if IsInRaid() and GetNumGroupMembers then
+        for index = 1, GetNumGroupMembers() do
+            local unit = "raid" .. tostring(index)
+            local name = NormalizePlayerName(UnitName(unit))
+            if name then
+                allowed[name] = true
+            end
+        end
+    elseif GetNumSubgroupMembers then
+        for index = 1, GetNumSubgroupMembers() do
+            local unit = "party" .. tostring(index)
+            local name = NormalizePlayerName(UnitName(unit))
+            if name then
+                allowed[name] = true
+            end
+        end
+    end
+
+    for name in pairs(groupKeyReports) do
+        if not allowed[name] then
+            groupKeyReports[name] = nil
+        end
+    end
 end
 
 local function CanUsePet(data)

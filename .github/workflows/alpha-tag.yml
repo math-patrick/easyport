@@ -3,13 +3,13 @@ name: Alpha Auto Tag
 on:
   push:
     branches:
-      - '**'
+      - main
 
 permissions:
   contents: write
 
 jobs:
-  pr-or-bump:
+  tag-alpha:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -31,18 +31,5 @@ jobs:
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
-      - name: PR Automation
-        uses: devjoes/pr-automation@v0.1.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Bump alpha version (main only)
-        if: github.ref == 'refs/heads/main'
-        run: |
-          npm version patch --preid=alpha --no-git-tag-version
-          git add package.json
-          git commit -m "chore: bump alpha version [skip ci]" || echo "No changes to commit"
-          git tag v$(node -p "require('./package.json').version")
-          git push
-          git push --tags
-          
+      - name: Run bump alpha
+        run: npm run bump:alpha
