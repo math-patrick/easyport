@@ -7,7 +7,10 @@ libs\LibDBIcon-1.0.xml
 ## SavedVariables: NozmieDB
 ## IconTexture: Interface\Icons\Spell_Holy_BorrowedTime
 
-Locales.lua
+# ============================================================================
+# LAYER 1: Localization (must load early for Lstr functions)
+# ============================================================================
+locales.lua
 Locales\enUS.lua
 Locales\deDE.lua
 Locales\frFR.lua
@@ -17,28 +20,81 @@ Locales\zhCN.lua
 Locales\zhTW.lua
 Locales\koKR.lua
 Locales\ptBR.lua
-Data\Class.lua
-Data\Expansions.lua
-Data\Hearthstones.lua
-Data\Mage.lua
-Data\Portals.lua
-Data\Utility.lua
-Data\Mounts.lua
-Data\EasterEggs.lua
-Data.lua
-Config.lua
-Helpers.lua
-Utility\ConfigHelpers.lua
-Utility\IconRenderer.lua
-Utility\ClickBehavior.lua
-Utility\IconHandling.lua
-BannerUI.lua
-BannerController.lua
-UtilityUI.lua
-Minimap.lua
-Utility\Button.lua
-SettingsMixins.lua
-SettingsTemplates.xml
-Settings.lua
-Detector.lua
-Init.lua
+
+# ============================================================================
+# LAYER 2: Static Data (no dependencies)
+# ============================================================================
+db\data\class.lua
+db\data\expansions.lua
+db\data\hearthstones.lua
+db\data\mage.lua
+db\data\portals.lua
+db\data\utility.lua
+db\data\mounts.lua
+db\data\pets.lua
+db\data\easter_eggs.lua
+data.lua
+
+# ============================================================================
+# LAYER 3: Core Infrastructure (foundation)
+# ============================================================================
+core\module_loader.lua
+core\events.lua
+core\state.lua
+
+# ============================================================================
+# LAYER 4: Utilities & Constants
+# ============================================================================
+utils\constants.lua
+utils\helpers.lua
+utils\messaging.lua
+
+# ============================================================================
+# LAYER 5: Database Layer
+# ============================================================================
+db\data.lua
+db\savedvariables.lua
+
+# ============================================================================
+# LAYER 6: Features (domain-specific modules)
+# ============================================================================
+features\detection.lua
+features\keystones.lua
+features\favourites.lua
+features\cooldowns.lua
+
+# ============================================================================
+# LAYER 8: UI Support & Components
+# ============================================================================
+ui\utilities\config_helpers.lua
+ui\utilities\icon_renderer.lua
+ui\utilities\click_behavior.lua
+ui\utilities\icon_handling.lua
+ui\utilities\button.lua
+ui\utilities\init.lua
+ui\utilities\favourites.lua
+ui\utilities\context_menu.lua
+ui\utilities\keystone_indicators.lua
+ui\banner\helpers.lua
+ui\banner\init.lua
+ui\settings\init.lua
+
+# ============================================================================
+# LAYER 9: UI Components
+# ============================================================================
+ui\banner\panel.lua
+ui\banner\controller.lua
+ui\utilities\panel.lua
+ui\shared.lua
+settings_mixins.lua
+settings_templates.xml
+
+# ============================================================================
+# LAYER 10: UI Extensions
+# ============================================================================
+ui\minimap.lua
+
+# ============================================================================
+# LAYER 11: Main Initialization
+# ============================================================================
+core\main.lua

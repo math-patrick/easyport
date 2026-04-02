@@ -1,4 +1,5 @@
-local Helpers = Nozmie_Helpers
+local Messaging = require("utils.messaging")
+local Cooldowns = require("features.cooldowns")
 
 local ClickBehavior = {}
 
@@ -71,8 +72,8 @@ function ClickBehavior.ApplyActionAttributes(frame, data)
     if data.actionType == "random_hearthstone" then
         frame:SetScript("PreClick", function(self)
             local macro = "/use item:6948"
-            if Helpers and Helpers.GetRandomHearthstoneMacro then
-                macro = Helpers.GetRandomHearthstoneMacro() or macro
+            if Cooldowns and Cooldowns.GetRandomHearthstoneMacro then
+                macro = Cooldowns.GetRandomHearthstoneMacro() or macro
             end
             self:SetAttribute("type", "macro")
             self:SetAttribute("type1", "macro")
@@ -109,10 +110,12 @@ function ClickBehavior.ApplyActionAttributes(frame, data)
     end
 
     if data.actionType == "pet" then
+        local petName = data.name or ""
+        local macro = data.macrotext or (petName ~= "" and ("/summonpet " .. petName) or "")
         frame:SetAttribute("type", "macro")
         frame:SetAttribute("type1", "macro")
-        frame:SetAttribute("macrotext", data.macrotext or "")
-        frame:SetAttribute("macrotext1", data.macrotext or "")
+        frame:SetAttribute("macrotext", macro)
+        frame:SetAttribute("macrotext1", macro)
         return
     end
 
@@ -159,8 +162,9 @@ function ClickBehavior.Apply(frame, opts)
                 local announceToGroup = Settings and Settings.Get and Settings.Get("announceToGroup")
 
                 if announceToGroup and data and (not self.lastAnnounceTime or GetTime() - self.lastAnnounceTime > 1) then
-                    Helpers.AnnounceUtility(data)
-                    self.lastAnnounceTime = GetTime()
+                    if Messaging.AnnounceUtility(data) then
+                        self.lastAnnounceTime = GetTime()
+                    end
                 end
 
                 if options.closeOnLeft then
@@ -175,8 +179,9 @@ function ClickBehavior.Apply(frame, opts)
         local data = GetFrameActionData(self)
         local now = GetTime()
         if data and (not self.lastAnnounceTime or now - self.lastAnnounceTime > 1) then
-            Helpers.AnnounceUtility(data, data.sourceEvent, data.sourceSender)
-            self.lastAnnounceTime = now
+            if Messaging.AnnounceUtility(data) then
+                self.lastAnnounceTime = now
+            end
         end
     end
 end

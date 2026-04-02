@@ -148,6 +148,7 @@ Nozmie_Locales["enUS"] = {
         ["utility.favourites.remove"] = "Remove from favourites",
         ["utility.favourites.empty"] = "No favourites yet",
         ["utility.favourites.empty.hint"] = "Right-click an entry and choose Add to favourites",
+        ["utility.context.showBanner"] = "Show banner",
         ["utility.context.announce"] = "Announce in chat",
         ["utility.context.copyWowhead"] = "Copy Wowhead link",
         ["utility.showAllEntries.toggle"] = "Show all entries",

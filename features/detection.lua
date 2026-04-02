@@ -1,27 +1,15 @@
-local Helpers = Nozmie_Helpers
-local Detector = {}
+-- ============================================================================
+-- Nozmie - Detection Feature Module
+-- Finds matching utilities/teleports in chat messages
+-- ============================================================================
 
-local function ShuffleTable(tbl)
-    for i = #tbl, 2, -1 do
-        local j = math.random(i)
-        tbl[i], tbl[j] = tbl[j], tbl[i]
-    end
-end
+local Detection = {}
 
-local function EscapePattern(text)
-    return (text:gsub("(%W)", "%%%1"))
-end
+-- ============================================================================
+-- Suppression & Filtering
+-- ============================================================================
 
-local function MatchesKeyword(message, keyword)
-    if not message or not keyword or keyword == "" then
-        return false
-    end
-    local normalizedMessage = message:lower()
-    local normalizedKeyword = tostring(keyword):lower()
-    local pattern = "%f[%w]" .. EscapePattern(normalizedKeyword) .. "%f[%W]"
-    return normalizedMessage:find(pattern) ~= nil
-end
-
+-- Check if suppression list contains key
 local function HasSuppression(list, key)
     if not list then
         return false
@@ -34,6 +22,7 @@ local function HasSuppression(list, key)
     return false
 end
 
+-- Check if item should be suppressed by category list
 local function ShouldSuppressByList(list, keys)
     if not list or #list == 0 then
         return false
@@ -46,21 +35,33 @@ local function ShouldSuppressByList(list, keys)
     return false
 end
 
+-- ============================================================================
+-- Utility Classification
+-- ============================================================================
+
+-- Check if spell is a portal spell
 local function IsPortalSpell(teleportData)
     local spellName = teleportData.spellName or ""
     return spellName:find("^Portal:") or spellName:find("^Ancient Portal:")
 end
 
+-- Check if utility is a service (repair, mailbox, etc)
 local function IsServiceOption(data)
     local destination = data.destination or ""
     return destination:find("Repair") or destination:find("Mailbox") or destination:find("Anvil") or destination:find("Transmog")
 end
 
+-- Check if utility is a hearthstone
 local function IsHearthstone(data)
     return data.category == "Home"
 end
 
-local function ShouldSuppressOption(data, settings, inInstance)
+-- ============================================================================
+-- Suppression Decision Logic
+-- ============================================================================
+
+-- Determine if a utility should be suppressed based on settings and context
+function Detection.ShouldSuppressOption(data, settings, inInstance)
     if not settings or not settings.Get then
         return false
     end
@@ -80,7 +81,7 @@ local function ShouldSuppressOption(data, settings, inInstance)
     if isClass then table.insert(keys, "class") end
 
     -- Grouped: Portals/Teleports/M+ Dungeons/Raids
-    if isMPlus or isRaid or isTeleport or isPortal or isDelve or isHearthstone then
+    if isMPlus or isRaid or isTeleport or isPortal or isHearthstone then
         table.insert(keys, "teleports")
     end
 
@@ -100,14 +101,23 @@ local function ShouldSuppressOption(data, settings, inInstance)
     return false
 end
 
-function Detector.FindMatchingTeleports(message, sender)
+-- ============================================================================
+-- Message Matching & Filtering
+-- ============================================================================
+
+-- Find all matching utilities in a chat message
+function Detection.FindMatchingUtilities(message, sender)
+    local Cooldowns = require("features.cooldowns")
+    local Data = require("db.data")
+    local Helpers = require("utils.helpers")
     local lowerMessage = message:lower()
+    
     local matches, hearthstones, currents = {}, {}, {}
-    local Settings = Nozmie_Settings
+    local Settings = _G.Nozmie_Settings
     local preferPortals = Settings and Settings.Get and Settings.Get("preferPortals")
 
+    -- Extract WoW links (|Hitem:id|h, |Hspell:id|h)
     local idsInMessage = {}
-    -- Match links like |Hitem:3577:0:0:276308480|h and |Hspell:12345|h
     for linkType, id in message:gmatch("|H(%a+):(%d+):.-|h") do
         idsInMessage[tonumber(id)] = true
     end
@@ -115,6 +125,7 @@ function Detector.FindMatchingTeleports(message, sender)
         idsInMessage[tonumber(id)] = true
     end
 
+    -- Check blacklist
     if Settings then
         local blacklist = Settings.Get("blacklistedWords") or ""
         if blacklist ~= "" then
@@ -127,7 +138,7 @@ function Detector.FindMatchingTeleports(message, sender)
         end
     end
 
-    -- Player/instance context
+    -- Player/Instance context
     local targetPlayer = sender and sender:match("([^-]+)") or sender
     local playerName = UnitName("player")
     if playerName and targetPlayer == playerName then
@@ -135,36 +146,54 @@ function Detector.FindMatchingTeleports(message, sender)
     end
     local inInstance = IsInInstance()
 
-    for _, teleportData in ipairs(Nozmie_Data) do
+    -- Find matches
+    local allData = {}
+    if Data and type(Data.GetAllUtilities) == "function" then
+        allData = Data.GetAllUtilities()
+    elseif Data and type(Data.GetAllData) == "function" then
+        allData = Data.GetAllData()
+    elseif type(_G.Nozmie_Data) == "table" then
+        allData = _G.Nozmie_Data
+    end
+
+    for _, utilityData in ipairs(allData) do
         local matched = false
-        -- Match by spellID/itemID
-        if (teleportData.spellID and idsInMessage[teleportData.spellID]) or (teleportData.itemID and idsInMessage[teleportData.itemID]) then
+        
+        -- Match by ID
+        if (utilityData.spellID and idsInMessage[utilityData.spellID]) or 
+           (utilityData.itemID and idsInMessage[utilityData.itemID]) then
             matched = true
-        elseif teleportData.keywords then
-            for _, keyword in ipairs(teleportData.keywords) do
-                if MatchesKeyword(lowerMessage, keyword) then
+        elseif utilityData.keywords then
+            -- Match by keyword
+            for _, keyword in ipairs(utilityData.keywords) do
+                if Helpers.MatchesKeyword(lowerMessage, keyword) then
                     matched = true
                     break
                 end
             end
         end
-        if matched and Helpers.CanPlayerUseUtility(teleportData) then
-            if not ShouldSuppressOption(teleportData, Settings, inInstance) then
-                local teleportCopy = {}
-                for k, v in pairs(teleportData) do
-                    teleportCopy[k] = v
+        
+        if matched and Cooldowns.CanPlayerUseUtility(utilityData) then
+            if not Detection.ShouldSuppressOption(utilityData, Settings, inInstance) then
+                local utilityCopy = {}
+                for k, v in pairs(utilityData) do
+                    utilityCopy[k] = v
                 end
-                if targetPlayer and teleportCopy.category and
-                    (teleportCopy.category:find("Utility") or teleportCopy.spellName == "Levitate" or
-                        teleportCopy.spellName == "Slow Fall") then
-                    teleportCopy.targetPlayer = targetPlayer
+                
+                -- Set target player for utility spells
+                if targetPlayer and utilityCopy.category and
+                    (utilityCopy.category:find("Utility") or utilityCopy.spellName == "Levitate" or
+                        utilityCopy.spellName == "Slow Fall") then
+                    utilityCopy.targetPlayer = targetPlayer
                 end
-                if teleportCopy.current then
-                    table.insert(currents, teleportCopy)
-                elseif IsHearthstone(teleportCopy) then
-                    table.insert(hearthstones, teleportCopy)
+                
+                -- Categorize result
+                if utilityCopy.current then
+                    table.insert(currents, utilityCopy)
+                elseif IsHearthstone(utilityCopy) then
+                    table.insert(hearthstones, utilityCopy)
                 else
-                    table.insert(matches, teleportCopy)
+                    table.insert(matches, utilityCopy)
                 end
             end
         end
@@ -172,20 +201,20 @@ function Detector.FindMatchingTeleports(message, sender)
 
     -- Randomize hearthstones
     if #hearthstones > 1 then
-        ShuffleTable(hearthstones)
+        Helpers.ShuffleTable(hearthstones)
     end
 
-    -- Sort matches: cooldowns last, priority first
+    -- Sort by cooldown and priority
     local ready, oncd = {}, {}
     for _, t in ipairs(matches) do
-        if Helpers.GetCooldownRemaining(t) > 0 then
+        if Cooldowns.GetRemaining(t) > 0 then
             table.insert(oncd, t)
         else
             table.insert(ready, t)
         end
     end
 
-    -- Priority sorting: priority=1 first, portals first if preferPortals
+    -- Priority sorting function
     local function sortPriority(a, b)
         local pa = tonumber(a.priority) or 0
         local pb = tonumber(b.priority) or 0
@@ -204,7 +233,7 @@ function Detector.FindMatchingTeleports(message, sender)
     table.sort(ready, sortPriority)
     table.sort(oncd, sortPriority)
 
-    -- Compose result: current > ready > hearthstones > cooldowns
+    -- Compose result: current > ready > hearthstones > on-cooldown
     local result = {}
     for _, t in ipairs(currents) do
         table.insert(result, t)
@@ -222,4 +251,5 @@ function Detector.FindMatchingTeleports(message, sender)
     return result
 end
 
-_G.Nozmie_Detector = Detector
+_G.Nozmie_Detection = Detection
+return Detection

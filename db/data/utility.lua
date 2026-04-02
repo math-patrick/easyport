@@ -301,4 +301,11 @@ ServiceToys = {{
     category = "Utility",
     cooldown = "30 min",
     keywords = {"Ultimate Gnomish Army Knife", "RESS", "revive"}
+}, {
+    name = "Chef's Hat",
+    itemID = 134020,
+    actionType = "toy",
+    category = "Utility",
+    cooldown = "30 min",
+    keywords = {"chef's hat", "chefs hat"}
 }}
