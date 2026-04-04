@@ -149,6 +149,18 @@ Nozmie_Locales["ruRU"] = {
         ["utility.entry.wowhead.popup.title"] = "Эта запись сейчас недоступна. Скопируйте ссылку Wowhead для подробностей:",
         ["utility.entry.wowhead.popup.close"] = "Закрыть"
     },
+    namesByName = {
+        ["Pit of Saron"] = "Яма Сарона",
+        ["Skyreach"] = "Небесный Путь",
+        ["Algeth'ar Academy"] = "Академия Алгет'ар",
+        ["Seat of the Triumvirate"] = "Престол Триумвирата",
+        ["Magisters' Terrace"] = "Терраса Магистров",
+        ["Windrunner Spire"] = "Шпили Ветрокрылых",
+        ["Nexus-Point Xenas"] = "Узел Нексуса Зенас",
+        ["Maisara Caverns"] = "Пещеры Майсары",
+        ["Wormhole Generator: Quel'Thalas"] = "Генератор червоточины: Кель'Талас",
+        ["Personal Key to the Arcantina"] = "Персональный ключ от Аркантины",
+    },
     keywordsByName = {}
 
 }

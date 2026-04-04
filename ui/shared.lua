@@ -2,6 +2,7 @@
 -- Shared logic for icon, text, and click/action for Nozmie UI elements
 
 local SharedUI = {}
+local Locale = _G.Nozmie_Locale
 
 -- Icon logic (was in BannerController)
 function SharedUI.GetIconForEntry(item)
@@ -40,7 +41,12 @@ end
 function SharedUI.GetEntryLabel(item)
     if not item then return "?" end
     if item.spellName then return item.spellName end
-    if item.name then return item.name end
+    if item.name then
+        if Locale and Locale.GetEntryName then
+            return Locale.GetEntryName(item, item.name)
+        end
+        return item.name
+    end
     if item.destination then return item.destination end
     return "?"
 end

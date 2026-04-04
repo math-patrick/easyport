@@ -65,6 +65,7 @@ local showAllEntriesToggle
 local activeSearchQuery = ""
 local cooldownUpdateElapsed = 0
 local COOLDOWN_UPDATE_INTERVAL = 0.15
+local shouldRestoreAfterCombat = false
 
 local SHOW_ALL_ENTRIES_DB_KEY = "showAllEntriesInUtilityUI"
 local SHOW_ALL_TOYS_LEGACY_DB_KEY = "showAllToysInUtilityUI"
@@ -225,7 +226,7 @@ local function MatchesSearch(item, query)
     if not query or query == "" then
         return true
     end
-    local text = string.lower(table.concat({tostring(item.name or ""), tostring(item.spellName or ""),
+    local text = string.lower(table.concat({tostring(ConfigHelpers.GetEntryName(item) or ""), tostring(item.name or ""), tostring(item.spellName or ""),
                                             tostring(item.destination or ""), tostring(item.category or "")}, " "))
     if text:find(query, 1, true) then
         return true
@@ -1133,15 +1134,27 @@ EnsureFrame = function()
     frame:RegisterEvent("PLAYER_REGEN_DISABLED")
     frame:RegisterEvent("PLAYER_REGEN_ENABLED")
     frame:RegisterEvent("GROUP_ROSTER_UPDATE")
+    frame:RegisterEvent("PET_JOURNAL_LIST_UPDATE")
+    frame:RegisterEvent("COMPANION_UPDATE")
     frame:RegisterEvent("NEW_TOY_ADDED")
     frame:RegisterEvent("TOYS_UPDATED")
     frame:SetScript("OnEvent", function(self, event)
         if event == "PLAYER_REGEN_DISABLED" then
+            if self:IsShown() then
+                shouldRestoreAfterCombat = true
+                self:Hide()
+                return
+            end
             RefreshCombatButtonState()
             return
         end
 
         if event == "PLAYER_REGEN_ENABLED" then
+            if shouldRestoreAfterCombat then
+                shouldRestoreAfterCombat = false
+                self:Show()
+                return
+            end
             RefreshLayout()
             RefreshCombatButtonState()
             return
@@ -1150,6 +1163,12 @@ EnsureFrame = function()
         if event == "GROUP_ROSTER_UPDATE" then
             Keystones.CleanupGroupKeyReportsForCurrentGroup()
             RefreshDungeonIndicators(nil)
+            return
+        end
+
+        if event == "PET_JOURNAL_LIST_UPDATE" or event == "COMPANION_UPDATE" then
+            BuildDataCache()
+            RefreshLayout()
             return
         end
 

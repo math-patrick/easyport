@@ -136,7 +136,7 @@ local function handleGroupKeyMessage(event, message, sender)
     if trackLinks ~= false and trimmed:find("|Hkeystone:", 1, true) and not shouldSkipDuplicateKeyMessage(sender, trimmed) then
         local parsed = Keystones.ParseKeystoneLink(trimmed, sender)
         if parsed and parsed.dungeonID and Keystones.StoreDetectedKey(parsed.playerName or sender, parsed.dungeonID, parsed.level, parsed.link) then
-            updateDungeonUI(parsed.dungeonID)
+            refreshGroupKeysUI()
             return true
         end
     end
@@ -353,7 +353,15 @@ end
 
 function Init.OnGroupRosterUpdate()
     Keystones.CleanupGroupKeyReportsForCurrentGroup()
+    Keystones.RefreshOwnedKeystoneReport()
     refreshGroupKeysUI()
+end
+
+function Init.OnOwnedKeystoneUpdated()
+    local changed = Keystones.RefreshOwnedKeystoneReport()
+    if changed then
+        refreshGroupKeysUI()
+    end
 end
 
 function Init.Initialize()
@@ -406,6 +414,14 @@ function Init.Initialize()
     
     EventBus.Register("GROUP_ROSTER_UPDATE", function()
         Init.OnGroupRosterUpdate()
+    end)
+
+    EventBus.Register("BAG_UPDATE_DELAYED", function()
+        Init.OnOwnedKeystoneUpdated()
+    end)
+
+    EventBus.Register("PLAYER_ENTERING_WORLD", function()
+        Init.OnOwnedKeystoneUpdated()
     end)
 end
 

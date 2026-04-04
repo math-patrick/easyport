@@ -4,6 +4,7 @@
 -- ============================================================================
 
 local Keystones = {}
+local Locale = _G.Nozmie_Locale
 
 -- Internal state for group key reports and caching
 local groupKeyReports = {}
@@ -16,6 +17,18 @@ local mapNameByIDCache = {}
 local function normalizePlayerName(name)
     if not name or name == "" then return nil end
     return name:match("([^-]+)") or name
+end
+
+local function removeGroupKeyReport(playerName)
+    local shortName = normalizePlayerName(playerName)
+    if not shortName then
+        return false
+    end
+    if groupKeyReports[shortName] == nil then
+        return false
+    end
+    groupKeyReports[shortName] = nil
+    return true
 end
 
 local function normalizeMapName(name)
@@ -36,7 +49,27 @@ local function dungeonNamesMatch(a, b)
     local left = normalizeDungeonName(a)
     local right = normalizeDungeonName(b)
     if not left or not right then return false end
-    return left == right or left:find(right, 1, true) ~= nil or right:find(left, 1, true) ~= nil
+    return left == right
+end
+
+local function entryNameMatchesMapName(entry, mapName)
+    if not entry or not mapName then
+        return false
+    end
+
+    if dungeonNamesMatch(mapName, entry.name) then
+        return true
+    end
+
+    if Locale and Locale.GetAllEntryNames then
+        for _, localizedName in ipairs(Locale.GetAllEntryNames(entry, entry.name)) do
+            if dungeonNamesMatch(mapName, localizedName) then
+                return true
+            end
+        end
+    end
+
+    return false
 end
 
 local function getMapNameFromID(mapID)
@@ -58,7 +91,7 @@ end
 local function entryMatchesKeystone(entry, report)
     if not entry or not report then return false end
     
-    if report.mapName and dungeonNamesMatch(report.mapName, entry.name) then
+    if report.mapName and entryNameMatchesMapName(entry, report.mapName) then
         return true
     end
     
@@ -72,7 +105,7 @@ local function entryMatchesKeystone(entry, report)
     
     if report.mapID then
         local mappedName = getMapNameFromID(report.mapID)
-        if mappedName and dungeonNamesMatch(mappedName, entry.name) then
+        if mappedName and entryNameMatchesMapName(entry, mappedName) then
             return true
         end
         if mappedName and type(entry.keywords) == "table" then
@@ -273,6 +306,11 @@ end
 function Keystones.RecordGroupKeyReport(playerName, mapName, level, mapID, link)
     local shortName = normalizePlayerName(playerName)
     if not shortName then return end
+
+    if (not mapName or mapName == "") and (not mapID or mapID == 0) then
+        removeGroupKeyReport(shortName)
+        return
+    end
     
     local resolvedMapName = mapName
     if (not resolvedMapName or resolvedMapName == "") and mapID then
@@ -287,6 +325,30 @@ function Keystones.RecordGroupKeyReport(playerName, mapName, level, mapID, link)
         link = link,
         timestamp = GetTime()
     }
+end
+
+function Keystones.RefreshOwnedKeystoneReport()
+    local playerName = normalizePlayerName(UnitName("player"))
+    if not playerName then
+        return false, nil
+    end
+
+    local keyInfo = Keystones.GetOwnedKeystone()
+    if not (keyInfo and keyInfo.mapID and keyInfo.mapID > 0) then
+        return removeGroupKeyReport(playerName), nil
+    end
+
+    local level = tonumber(keyInfo.level) or 0
+    local link = Keystones.GetOwnedKeystoneLink()
+    local existing = groupKeyReports[playerName]
+    local changed = not existing or existing.mapID ~= keyInfo.mapID or (tonumber(existing.level) or 0) ~= level or
+        existing.mapName ~= keyInfo.mapName or existing.link ~= link
+
+    if changed then
+        Keystones.RecordGroupKeyReport(playerName, keyInfo.mapName, level, keyInfo.mapID, link)
+    end
+
+    return changed, keyInfo.mapID
 end
 
 -- Store a detected keystone (from chat link)
@@ -394,15 +456,8 @@ function Keystones.SendOwnedKeystoneToChannel(channel)
     end
     
     C_ChatInfo.SendChatMessage(message, channel)
-    
-    -- Record our own keystone too
-    local playerName = UnitName("player")
-    if keyInfo and keyInfo.level and keyInfo.level > 0 then
-        Keystones.RecordGroupKeyReport(playerName, keyInfo.mapName, keyInfo.level, keyInfo.mapID,
-            Keystones.GetOwnedKeystoneLink())
-    else
-        Keystones.RecordGroupKeyReport(playerName, nil, nil)
-    end
+
+    Keystones.RefreshOwnedKeystoneReport()
     
     return true
 end

@@ -149,5 +149,17 @@ Nozmie_Locales = Nozmie_Locales or {}
                 ["utility.entry.wowhead.popup.title"] = "该条目当前不可用。复制此Wowhead链接以查看详情：",
                 ["utility.entry.wowhead.popup.close"] = "关闭",
             },
+            namesByName = {
+                ["Pit of Saron"] = "萨隆矿坑",
+                ["Skyreach"] = "通天峰",
+                ["Algeth'ar Academy"] = "艾杰斯亚学院",
+                ["Seat of the Triumvirate"] = "执政团之座",
+                ["Magisters' Terrace"] = "魔导师平台",
+                ["Windrunner Spire"] = "风行者之塔",
+                ["Nexus-Point Xenas"] = "节点希纳斯",
+                ["Maisara Caverns"] = "梅萨拉洞穴",
+                ["Wormhole Generator: Quel'Thalas"] = "虫洞发生器：奎尔萨拉斯",
+                ["Personal Key to the Arcantina"] = "阿坎蒂娜私人钥匙",
+            },
             keywordsByName = {}
         }

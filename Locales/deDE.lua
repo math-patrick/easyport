@@ -149,5 +149,17 @@ Nozmie_Locales["deDE"] = {
         ["utility.entry.wowhead.popup.title"] = "Dieser Eintrag ist derzeit nicht verfügbar. Kopiere diesen Wowhead-Link, um Details zu sehen:",
         ["utility.entry.wowhead.popup.close"] = "Schließen",
     },
+    namesByName = {
+        ["Pit of Saron"] = "Grube von Saron",
+        ["Skyreach"] = "Himmelsnadel",
+        ["Algeth'ar Academy"] = "Akademie von Algeth'ar",
+        ["Seat of the Triumvirate"] = "Sitz des Triumvirats",
+        ["Magisters' Terrace"] = "Terrasse der Magister",
+        ["Windrunner Spire"] = "Windläuferturm",
+        ["Nexus-Point Xenas"] = "Nexuspunkt Xenas",
+        ["Maisara Caverns"] = "Maisarakavernen",
+        ["Wormhole Generator: Quel'Thalas"] = "Wurmlochgenerator: Quel'Thalas",
+        ["Personal Key to the Arcantina"] = "Persönlicher Schlüssel zur Arcantina",
+    },
     keywordsByName = {}
 }

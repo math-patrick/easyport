@@ -54,19 +54,50 @@ local function SetBannerInteractiveState(banner, enabled)
     end
 end
 
+local function CancelBannerAutoHideTimer(banner)
+    if banner and banner.autoHideTimer then
+        banner.autoHideTimer:Cancel()
+        banner.autoHideTimer = nil
+    end
+end
+
+local function StartBannerAutoHideTimer(banner)
+    local Settings = _G.Nozmie_Settings
+    if not banner or not Settings or not Settings.Get or not Settings.Get("autoHideBanner") then
+        return
+    end
+
+    CancelBannerAutoHideTimer(banner)
+
+    local timeout = Settings.Get("bannerTimeout") or 10
+    banner.autoHideTimer = C_Timer.NewTimer(timeout, function()
+        if banner:IsShown() and not banner.isOnCooldown and not IsCombatLocked() then
+            UIFrameFadeOut(banner, 0.3, 1, 0)
+            C_Timer.After(0.3, function()
+                banner:Hide()
+                if banner.updateTimer then
+                    banner.updateTimer:Cancel()
+                end
+            end)
+        end
+    end)
+end
+
 local function ApplyBannerCombatState(banner)
     if not banner or not banner:IsShown() then
         return
     end
     if IsCombatLocked() then
         SetBannerInteractiveState(banner, false)
-        banner:SetAlpha(0.2)
-        banner.nozmieCombatDimmed = true
+        banner:SetAlpha(0)
+        banner.nozmieCombatHidden = true
+        CancelBannerAutoHideTimer(banner)
     else
         SetBannerInteractiveState(banner, true)
-        if banner.nozmieCombatDimmed then
+        if banner.nozmieCombatHidden then
             banner:SetAlpha(1)
-            banner.nozmieCombatDimmed = false
+            banner.nozmieCombatHidden = false
+            StartBannerAutoHideTimer(banner)
         end
     end
 end
@@ -412,9 +443,7 @@ function BannerController.ShowWithOptions(banner, teleportOptions, isStacked, al
     if banner.updateTimer then
         banner.updateTimer:Cancel()
     end
-    if banner.autoHideTimer then
-        banner.autoHideTimer:Cancel()
-    end
+    CancelBannerAutoHideTimer(banner)
 
     banner.options = teleportOptions
     banner.optionsKey = BuildOptionsKey(teleportOptions)
@@ -455,10 +484,7 @@ function BannerController.ShowWithOptions(banner, teleportOptions, isStacked, al
             self.updateTimer:Cancel();
             self.updateTimer = nil
         end
-        if self.autoHideTimer then
-            self.autoHideTimer:Cancel();
-            self.autoHideTimer = nil
-        end
+        CancelBannerAutoHideTimer(self)
 
         local root = self.stackRoot or self
         if self ~= root then
@@ -494,7 +520,7 @@ function BannerController.ShowWithOptions(banner, teleportOptions, isStacked, al
         banner:SetAlpha(0)
         banner:Show()
         if IsCombatLocked() then
-            banner:SetAlpha(0.2)
+            banner:SetAlpha(0)
         else
             UIFrameFadeIn(banner, 0.4, 0, 1)
         end
@@ -503,20 +529,8 @@ function BannerController.ShowWithOptions(banner, teleportOptions, isStacked, al
     trackedBanners[banner] = true
     ApplyBannerCombatState(banner)
 
-    local Settings = _G.Nozmie_Settings
-    if Settings and Settings.Get and Settings.Get("autoHideBanner") then
-        local timeout = Settings.Get("bannerTimeout") or 10
-        banner.autoHideTimer = C_Timer.NewTimer(timeout, function()
-            if banner:IsShown() and not banner.isOnCooldown then
-                UIFrameFadeOut(banner, 0.3, 1, 0)
-                C_Timer.After(0.3, function()
-                    banner:Hide()
-                    if banner.updateTimer then
-                        banner.updateTimer:Cancel()
-                    end
-                end)
-            end
-        end)
+    if not IsCombatLocked() then
+        StartBannerAutoHideTimer(banner)
     end
 
     if not banner.nozmieTrackedHooked then
