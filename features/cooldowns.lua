@@ -82,15 +82,48 @@ end
 -- Check if player has a specific pet
 local function canUsePet(data)
     local petName = data and data.name
-    if not C_PetJournal or not C_PetJournal.GetNumPets or not petName then
+    local wantedSpeciesID = tonumber(data and data.petID)
+    local wantedName = string.lower(tostring(petName or ""))
+
+    if not C_PetJournal then
         return false
     end
-    for i = 1, C_PetJournal.GetNumPets() do
-        local _, _, _, customName, _, _, _, petNameFromJournal = C_PetJournal.GetPetInfoByIndex(i)
-        if petNameFromJournal == petName or customName == petName then
+
+    if wantedSpeciesID and C_PetJournal.GetNumCollectedInfo then
+        local ownedCount = select(1, C_PetJournal.GetNumCollectedInfo(wantedSpeciesID))
+        if tonumber(ownedCount) and ownedCount > 0 then
             return true
         end
     end
+
+    if not C_PetJournal.GetNumPets or wantedName == "" then
+        return false
+    end
+
+    local numPets = C_PetJournal.GetNumPets()
+
+    for i = 1, numPets do
+        local _, speciesID, isOwned, customName, _, _, _, petNameFromJournal = C_PetJournal.GetPetInfoByIndex(i)
+        if isOwned then
+            if wantedSpeciesID and speciesID == wantedSpeciesID then
+                return true
+            end
+
+            local journalName = string.lower(tostring(petNameFromJournal or ""))
+            local journalCustomName = string.lower(tostring(customName or ""))
+            if journalName == wantedName or journalCustomName == wantedName then
+                return true
+            end
+        end
+    end
+
+    if C_PetJournal.PetIsSummonable and C_PetJournal.FindPetIDByName then
+        local foundPetID = C_PetJournal.FindPetIDByName(petName)
+        if foundPetID then
+            return C_PetJournal.PetIsSummonable(foundPetID) == true
+        end
+    end
+
     return false
 end
 

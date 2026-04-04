@@ -158,5 +158,17 @@ Nozmie_Locales["enUS"] = {
         ["utility.entry.wowhead.popup.title"] = "This entry is not available to use right now. Copy this Wowhead link to see details:",
         ["utility.entry.wowhead.popup.close"] = "Close",
     },
+    namesByName = {
+        ["Pit of Saron"] = "Pit of Saron",
+        ["Skyreach"] = "Skyreach",
+        ["Algeth'ar Academy"] = "Algeth'ar Academy",
+        ["Seat of the Triumvirate"] = "Seat of the Triumvirate",
+        ["Magisters' Terrace"] = "Magisters' Terrace",
+        ["Windrunner Spire"] = "Windrunner Spire",
+        ["Nexus-Point Xenas"] = "Nexus-Point Xenas",
+        ["Maisara Caverns"] = "Maisara Caverns",
+        ["Wormhole Generator: Quel'Thalas"] = "Wormhole Generator: Quel'Thalas",
+        ["Personal Key to the Arcantina"] = "Personal Key to the Arcantina",
+    },
     keywordsByName = {}
 }

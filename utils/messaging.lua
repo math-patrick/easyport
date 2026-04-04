@@ -6,6 +6,14 @@
 local Constants = require("utils.constants")
 
 local Messaging = {}
+local Locale = _G.Nozmie_Locale
+
+local function GetDisplayName(data)
+    if Locale and Locale.GetEntryName then
+        return Locale.GetEntryName(data, data and data.name)
+    end
+    return data and data.name or nil
+end
 
 -- ============================================================================
 -- Announcement Creation
@@ -18,19 +26,20 @@ function Messaging.GetActionAndNoun(data)
     end
     
     local actionType = data.actionType or ""
+    local entryName = GetDisplayName(data)
     
     if actionType == "spell" then
-        return "cast", data.name or "spell"
+        return "cast", entryName or "spell"
     elseif actionType == "item" then
-        return "use", data.name or "item"
+        return "use", entryName or "item"
     elseif actionType == "pet" then
-        return "summon", data.name or "pet"
+        return "summon", entryName or "pet"
     elseif actionType == "mount" then
-        return "mount", data.name or "mount"
+        return "mount", entryName or "mount"
     elseif actionType == "toy" then
-        return "use", data.name or "toy"
+        return "use", entryName or "toy"
     else
-        return "use", data.name or "ability"
+        return "use", entryName or "ability"
     end
 end
 
@@ -112,9 +121,8 @@ end
 function Messaging.FormatAnnounceMessage(data)
     if not data then return nil end
 
-    local locale = _G.Nozmie_Locale
     local function Lstr(key, fallback)
-        if locale and locale.GetString then return locale.GetString(key, fallback) end
+        if Locale and Locale.GetString then return Locale.GetString(key, fallback) end
         return fallback or key
     end
 
@@ -127,9 +135,10 @@ function Messaging.FormatAnnounceMessage(data)
         spellName:find("^Ancient Portal:")
 
     local prefix = string.format("[%s] ", Lstr("addon.name", "Nozmie"))
-    local destination = NormalizeAnnounceLabel(data.destination or data.name)
-    local castName = NormalizeAnnounceLabel(data.spellName or data.name)
-    local summonName = NormalizeAnnounceLabel(data.destination or data.name)
+    local displayName = GetDisplayName(data)
+    local destination = NormalizeAnnounceLabel(data.destination or displayName)
+    local castName = NormalizeAnnounceLabel(data.spellName or displayName)
+    local summonName = NormalizeAnnounceLabel(data.destination or displayName)
 
     if isTeleport and destination ~= "" then
         return prefix .. string.format(Lstr("announce.teleporting", "Teleporting to %s!"), destination)

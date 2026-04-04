@@ -1,5 +1,7 @@
 local ConfigHelpers = {}
 
+local Locale = _G.Nozmie_Locale
+
 local petIconCache = {}
 function ConfigHelpers.GetPetIconByName(petName)
     if not petName or not C_PetJournal or not C_PetJournal.GetNumPets then return nil end
@@ -37,6 +39,9 @@ function ConfigHelpers.GetIconForEntry(data)
 end
 
 function ConfigHelpers.GetEntryName(data)
+    if Locale and Locale.GetEntryName then
+        return Locale.GetEntryName(data, data and data.name)
+    end
     return data.name or data.spellName or data.destination or "?"
 end
 

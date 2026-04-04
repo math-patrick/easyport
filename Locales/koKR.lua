@@ -149,5 +149,17 @@ Nozmie_Locales["koKR"] = {
         ["utility.entry.wowhead.popup.title"] = "이 항목은 현재 사용할 수 없습니다. 자세한 내용을 보려면 이 Wowhead 링크를 복사하세요:",
         ["utility.entry.wowhead.popup.close"] = "닫기"
     },
+    namesByName = {
+        ["Pit of Saron"] = "사론의 구덩이",
+        ["Skyreach"] = "하늘탑",
+        ["Algeth'ar Academy"] = "알게타르 학술원",
+        ["Seat of the Triumvirate"] = "삼두정의 권좌",
+        ["Magisters' Terrace"] = "마법학자의 정원",
+        ["Windrunner Spire"] = "윈드러너 첨탑",
+        ["Nexus-Point Xenas"] = "공결탑 제나스",
+        ["Maisara Caverns"] = "마이사라 동굴",
+        ["Wormhole Generator: Quel'Thalas"] = "웜홀 생성기: 쿠엘탈라스",
+        ["Personal Key to the Arcantina"] = "아르칸티나 개인 열쇠",
+    },
     keywordsByName = {}
 }

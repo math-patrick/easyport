@@ -314,7 +314,7 @@ local Shadowlands = {{
     spellName = "Path of the Scheming Loa",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"de other side", "dos"}
+    keywords = {"de other side"}
 }, {
     name = "Tazavesh, the Veiled Market",
     spellID = 367416,
