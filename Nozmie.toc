@@ -1,5 +1,5 @@
 libs\LibDBIcon-1.0.xml
-## Interface: 110207, 120000, 120001
+## Interface: 120000, 120001, 120005
 ## Title: Nozmie: Utility Helper
 ## Notes: Smart teleport and utility detection with player targeting. Auto-detects dungeon names and buff requests in chat.
 ## Author: Sabya

@@ -41,7 +41,7 @@ Mounts = {{
     category = "Utility",
     cooldown = "No CD",
     destination = "Auction House & Repair",
-    keywords = {"brutosaur", "bruto", "auction", "ah", "longboy", "vendor"},
+    keywords = {"brutosaur", "bruto", "auction", "ah", "longboy", "vendor",  "aromatise"},
     legacy = 1
 }, {
     name = "Trader's Gilded Brutosaur",
@@ -53,7 +53,7 @@ Mounts = {{
     category = "Utility",
     cooldown = "No CD",
     destination = "Auction House & Mailbox",
-    keywords = {"brutosaur", "bruto", "auction", "ah", "longboy", "mailbox", "mail"}
+    keywords = {"brutosaur", "bruto", "auction", "ah", "longboy", "mailbox", "mail", "aromatise"}
 }, {
     name = "Grizzly Hills Packmaster",
     spellID = 457485,
