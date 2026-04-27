@@ -90,7 +90,7 @@ local function handleGroupKeyMessage(event, message, sender)
         return false
     end
 
-    local trimmed = message:trim()
+    local trimmed = Helpers.Trim(message)
     local lowered = trimmed:lower()
     
     -- Handle !keys request
@@ -216,12 +216,16 @@ function Init.OnChatMessage(self, event, message, sender)
     
     -- Show banner or queue matches
     if #matches > 0 and Settings.Get("showBanner") then
+        if not (BannerController and banner) then
+            return false
+        end
+
         if InCombatLockdown() then
             queueMatches(matches)
             return false
         end
         
-        if BannerController.FindBannerByOptions and banner and banner:IsShown() then
+        if BannerController.FindBannerByOptions and banner:IsShown() then
             local existingBanner = BannerController.FindBannerByOptions(banner, matches)
             if existingBanner then
                 local isStacked = existingBanner ~= banner
@@ -243,7 +247,7 @@ end
 function Init.HandleCommand(args)
     local Settings = GetSettings()
     local Minimap = GetMinimap()
-    local cmd = tostring(args or ""):lower():trim()
+    local cmd = Helpers.Trim(args):lower()
 
     if cmd == "settings" or cmd == "config" or cmd == "options" then
         if Settings and Settings.Show then

@@ -25,7 +25,7 @@ function IconRenderer.CreateIconFrame(parent, iconSize)
     border:SetSize(frameSize, frameSize)
     border:SetPoint("CENTER")
     border:SetTexture("Interface\\Buttons\\UI-Quickslot2")
-    border:SetAlpha(0.85)
+    border:SetAlpha(0.88)
     
     frame.icon = icon
     frame.border = border
@@ -41,8 +41,8 @@ function IconRenderer.ApplyTooltip(iconFrame)
 
     iconFrame:SetScript("OnEnter", function(self)
         local parent = self:GetParent()
-        local data = parent.nozmieTooltipData or parent.activeData or parent.data or parent.nozmieUnavailableData or
-                         self.data
+        local data = self.nozmieTooltipData or self.activeData or self.data or self.nozmieUnavailableData or
+                         parent.nozmieTooltipData or parent.activeData or parent.data or parent.nozmieUnavailableData
         if not data then
             return
         end

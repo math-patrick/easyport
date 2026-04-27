@@ -45,7 +45,7 @@ _G.Nozmie_UtilityUI = UtilityUI
 local filteredData = {}
 local buttons = {}
 local GRID_PADDING = 8
-local ROW_HEIGHT = 44
+local ROW_HEIGHT = 46
 local ICON_SIZE = 36
 local frame
 local content
@@ -62,6 +62,7 @@ local tabButtons = {}
 local tabHasContentById = {}
 local tabOrder = {TAB_CURRENT_DUNGEONS, TAB_LEGACY_DUNGEONS, TAB_TELEPORTS, TAB_UTILITY, TAB_HEARTHSTONE}
 local showAllEntriesToggle
+local resultSummaryText
 local activeSearchQuery = ""
 local cooldownUpdateElapsed = 0
 local COOLDOWN_UPDATE_INTERVAL = 0.15
@@ -331,6 +332,7 @@ local function UpdateTabVisibility(parent)
             tab:Show()
             tab:SetEnabled(true)
             tab:EnableMouse(true)
+            tab:SetAlpha(hasContent and 1 or 0.55)
             prevTab = tab
         end
     end
@@ -452,8 +454,8 @@ local function EnsureButton(index)
 
     if not button.favouriteToggle then
         local favouriteToggle = CreateFrame("Button", nil, button)
-        favouriteToggle:SetSize(16, 16)
-        favouriteToggle:SetPoint("TOPRIGHT", button.icon, "TOPRIGHT", 6, 6)
+        favouriteToggle:SetSize(12, 12)
+        favouriteToggle:SetPoint("TOPRIGHT", button.icon, "TOPRIGHT", 3, 4)
         favouriteToggle:EnableMouse(false)
         if button.cooldown and button.cooldown.GetFrameLevel then
             favouriteToggle:SetFrameLevel((button.cooldown:GetFrameLevel() or button:GetFrameLevel()) + 3)
@@ -463,7 +465,7 @@ local function EnsureButton(index)
 
         local iconTexture = favouriteToggle:CreateTexture(nil, "OVERLAY")
         iconTexture:SetPoint("CENTER")
-        iconTexture:SetSize(14, 14)
+        iconTexture:SetSize(11, 11)
         ApplyFavouriteIcon(iconTexture)
         favouriteToggle.iconTexture = iconTexture
 
@@ -523,6 +525,15 @@ end
 
 function UtilityUI.Toggle()
     local host = EnsureFrame()
+    if IsCombatLocked() then
+        if host:IsShown() then
+            host.nozmieHideAfterCombat = true
+            host:SetAlpha(0.45)
+            RefreshCombatButtonState()
+        end
+        return
+    end
+
     if host:IsShown() then
         host:Hide()
     else
@@ -531,11 +542,20 @@ function UtilityUI.Toggle()
 end
 
 function UtilityUI.Show()
+    if IsCombatLocked() then
+        return
+    end
     EnsureFrame():Show()
 end
 
 function UtilityUI.Hide()
     if frame then
+        if IsCombatLocked() then
+            frame.nozmieHideAfterCombat = true
+            frame:SetAlpha(0.45)
+            RefreshCombatButtonState()
+            return
+        end
         frame:Hide()
     end
 end
@@ -559,8 +579,8 @@ IsUsableUtility = function(item)
         return Cooldowns.CanPlayerUseUtility(item)
     end
     if item.itemID then
-        if C_Item and C_Item.GetItemCount then
-            return C_Item.GetItemCount(item.itemID, true, false, false) > 0
+        if GetItemCount then
+            return GetItemCount(item.itemID, false, false) > 0
         end
         return false
     end
@@ -645,6 +665,10 @@ local function ClearButtonActions(button)
     if ClickBehavior and ClickBehavior.ClearActionAttributes then
         ClickBehavior.ClearActionAttributes(button)
     else
+        if IsCombatLocked() then
+            button.nozmiePendingClearActionAttributes = true
+            return
+        end
         button:SetScript("PreClick", nil)
         button:SetAttribute("type", nil)
         button:SetAttribute("type1", nil)
@@ -685,11 +709,13 @@ end
 local function ApplyEntryTextAndStyle(button, data, isUnavailable, isFav)
     button:SetAlpha(1)
     button:EnableMouse(true)
-    button:SetHighlightTexture("Interface\\Buttons\\UI-Listbox-Highlight2")
-    local highlightTexture = button:GetHighlightTexture()
-    if highlightTexture then
-        highlightTexture:SetBlendMode("ADD")
-        highlightTexture:SetAlpha(1)
+    button.nozmieFavouriteVisual = isFav and not isUnavailable
+    if button.accent then
+        button.accent:SetShown(button.nozmieFavouriteVisual == true)
+        button.accent:SetVertexColor(1, 0.82, 0, isFav and 0.1 or 0.075)
+    end
+    if button.rowBg then
+        button.rowBg:SetVertexColor(1, 0.82, 0, isFav and 0.075 or 0.055)
     end
     button.icon:SetAlpha(1)
 
@@ -729,7 +755,7 @@ local function ApplyEntryTextAndStyle(button, data, isUnavailable, isFav)
     end
     button.icon:SetAlpha(isUnavailable and 0.75 or 1)
     if isUnavailable then
-        button:SetAlpha(0.92)
+        button:SetAlpha(0.9)
     end
 end
 
@@ -807,6 +833,9 @@ local function LayoutButtons()
             frame.nozmieEmptyStateText:Show()
         end
         content:SetHeight(ROW_HEIGHT + GRID_PADDING)
+        if scrollFrame and scrollFrame.ScrollBar then
+            scrollFrame.ScrollBar:Hide()
+        end
         return
     end
 
@@ -853,7 +882,12 @@ local function LayoutButtons()
     end
     local rows = math.max(1, row + (col > 0 and 1 or 0))
 
-    content:SetHeight(rows * (ROW_HEIGHT + GRID_PADDING))
+    local contentHeight = rows * (ROW_HEIGHT + GRID_PADDING)
+    content:SetHeight(contentHeight)
+    if scrollFrame and scrollFrame.ScrollBar then
+        local viewportHeight = scrollFrame:GetHeight() or 0
+        scrollFrame.ScrollBar:SetShown(contentHeight > viewportHeight + 2)
+    end
 end
 
 RefreshLayout = function()
@@ -864,6 +898,15 @@ RefreshLayout = function()
     LayoutButtons()
     if frame then
         ApplySelectedTabVisual(frame)
+        if resultSummaryText then
+            local total = dataCache and #dataCache or 0
+            local shown = filteredData and #filteredData or 0
+            if activeSearchQuery ~= "" then
+                resultSummaryText:SetText(string.format("%d of %d", shown, total))
+            else
+                resultSummaryText:SetText(string.format("%d shown", shown))
+            end
+        end
     end
 end
 
@@ -997,7 +1040,7 @@ EnsureFrame = function()
     end
 
     frame = CreateFrame("Frame", "NozmieUtilityFrame", UIParent, "PortraitFrameTemplate")
-    frame:SetSize(700, 470)
+    frame:SetSize(720, 470)
     frame:SetPoint("CENTER")
     frame:SetFrameStrata("HIGH")
     frame:SetMovable(true)
@@ -1037,13 +1080,21 @@ EnsureFrame = function()
         end)
     end
 
+    local headerShade = frame:CreateTexture(nil, "BACKGROUND")
+    headerShade:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+    headerShade:SetBlendMode("ADD")
+    headerShade:SetPoint("TOPLEFT", frame, "TOPLEFT", 70, -31)
+    headerShade:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -300, -31)
+    headerShade:SetHeight(24)
+    headerShade:SetVertexColor(1, 0.82, 0, 0.14)
+
     frame.Inset = CreateFrame("Frame", nil, frame, "InsetFrameTemplate3")
-    frame.Inset:SetPoint("TOPLEFT", 4, -56)
-    frame.Inset:SetPoint("BOTTOMRIGHT", -6, 28)
+    frame.Inset:SetPoint("TOPLEFT", 6, -62)
+    frame.Inset:SetPoint("BOTTOMRIGHT", -8, 34)
 
     searchBox = CreateFrame("EditBox", nil, frame, "SearchBoxTemplate")
-    searchBox:SetSize(220, 20)
-    searchBox:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -24, -32)
+    searchBox:SetSize(250, 22)
+    searchBox:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -28, -34)
     searchBox:SetScript("OnTextChanged", function()
         if searchBox.Instructions then
             if searchBox:GetText() == "" then
@@ -1055,14 +1106,20 @@ EnsureFrame = function()
         RefreshLayout()
     end)
     if searchBox.Instructions then
-        searchBox.Instructions:SetText(Lstr("utility.search.placeholder", "Search utility...") or "Search utility...")
+        searchBox.Instructions:SetText(Lstr("utility.search.placeholder", "Search utilities...") or "Search utilities...")
         searchBox.Instructions:SetPoint("LEFT", searchBox, "LEFT", 6, 0)
         searchBox.Instructions:SetJustifyH("LEFT")
         searchBox.Instructions:Show()
     end
 
+    resultSummaryText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    resultSummaryText:SetPoint("RIGHT", searchBox, "LEFT", -12, 0)
+    resultSummaryText:SetTextColor(0.78, 0.68, 0.48)
+    resultSummaryText:SetJustifyH("RIGHT")
+    resultSummaryText:SetText("")
+
     showAllEntriesToggle = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
-    showAllEntriesToggle:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 2, 0)
+    showAllEntriesToggle:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 10, 5)
     showAllEntriesToggle:SetScript("OnClick", function(self)
         SetShowAllEntriesEnabled(self:GetChecked())
         BuildDataCache()
@@ -1071,7 +1128,7 @@ EnsureFrame = function()
 
     showAllEntriesToggle.label = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     showAllEntriesToggle.label:SetPoint("LEFT", showAllEntriesToggle, "RIGHT", -2, 0)
-    showAllEntriesToggle.label:SetText(Lstr("utility.showAllEntries.toggle", "Show all entries"))
+    showAllEntriesToggle.label:SetText(Lstr("utility.showAllEntries.toggle", "Show unavailable"))
     showAllEntriesToggle.label:SetTextColor(0.9, 0.9, 0.9)
 
     showAllEntriesToggle:SetScript("OnEnter", function(self)
@@ -1098,8 +1155,8 @@ EnsureFrame = function()
     scrollFrame:SetScrollChild(content)
 
     frame.nozmieEmptyStateText = content:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    frame.nozmieEmptyStateText:SetPoint("TOP", content, "TOP", 0, -28)
-    frame.nozmieEmptyStateText:SetWidth(520)
+    frame.nozmieEmptyStateText:SetPoint("TOP", content, "TOP", 0, -44)
+    frame.nozmieEmptyStateText:SetWidth(600)
     frame.nozmieEmptyStateText:SetJustifyH("CENTER")
     frame.nozmieEmptyStateText:SetJustifyV("TOP")
     frame.nozmieEmptyStateText:SetTextColor(0.72, 0.72, 0.72)
@@ -1142,18 +1199,22 @@ EnsureFrame = function()
         if event == "PLAYER_REGEN_DISABLED" then
             if self:IsShown() then
                 shouldRestoreAfterCombat = true
-                self:Hide()
-                return
+                self:SetAlpha(0.55)
             end
             RefreshCombatButtonState()
             return
         end
 
         if event == "PLAYER_REGEN_ENABLED" then
+            self:SetAlpha(1)
+            if self.nozmieHideAfterCombat then
+                self.nozmieHideAfterCombat = nil
+                shouldRestoreAfterCombat = false
+                self:Hide()
+                return
+            end
             if shouldRestoreAfterCombat then
                 shouldRestoreAfterCombat = false
-                self:Show()
-                return
             end
             RefreshLayout()
             RefreshCombatButtonState()

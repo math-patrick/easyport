@@ -66,6 +66,7 @@ LegacyHelpers.MatchesKeyword = Helpers.MatchesKeyword
 LegacyHelpers.ShuffleTable = Helpers.ShuffleTable
 LegacyHelpers.SafeCall = Helpers.SafeCall
 LegacyHelpers.CreateCache = Helpers.CreateCache
+LegacyHelpers.Trim = Helpers.Trim
 
 _G.Nozmie_Helpers = LegacyHelpers
 return LegacyHelpers

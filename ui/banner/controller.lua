@@ -74,6 +74,11 @@ local function StartBannerAutoHideTimer(banner)
         if banner:IsShown() and not banner.isOnCooldown and not IsCombatLocked() then
             UIFrameFadeOut(banner, 0.3, 1, 0)
             C_Timer.After(0.3, function()
+                if IsCombatLocked() then
+                    banner.nozmieCloseAfterCombat = true
+                    banner:SetAlpha(0)
+                    return
+                end
                 banner:Hide()
                 if banner.updateTimer then
                     banner.updateTimer:Cancel()
@@ -94,6 +99,16 @@ local function ApplyBannerCombatState(banner)
         CancelBannerAutoHideTimer(banner)
     else
         SetBannerInteractiveState(banner, true)
+        if banner.nozmieCloseAfterCombat then
+            banner.nozmieCloseAfterCombat = nil
+            banner:SetAlpha(1)
+            banner:Hide()
+            return
+        end
+        if banner.nozmieNeedsSecureRefresh then
+            banner.nozmieNeedsSecureRefresh = nil
+            RefreshBannerDisplay(banner)
+        end
         if banner.nozmieCombatHidden then
             banner:SetAlpha(1)
             banner.nozmieCombatHidden = false
@@ -353,11 +368,11 @@ local function UpdateBannerForReady(banner, data, totalOptions, currentIndex)
         local count = string.format(Lstr("banner.subtitleCount", "%d/%d"), currentIndex, totalOptions)
         local suffix = Lstr("banner.subtitleSuffix", "Right-click to close")
         banner.subtitle:SetText(
-            "|cff888888" .. prefix .. " • |r|cff00ff00" .. count .. "|r |cff888888• " .. suffix .. "|r")
+            "|cff888888" .. prefix .. " - |r|cff00ff00" .. count .. "|r |cff888888- " .. suffix .. "|r")
     else
         local prefix = string.format(Lstr("banner.subtitlePrefix", "Click to %s%s"), actionText, targetInfo)
         local suffix = Lstr("banner.subtitleSuffix", "Right-click to close")
-        banner.subtitle:SetText("|cff888888" .. prefix .. " • " .. suffix .. "|r")
+        banner.subtitle:SetText("|cff888888" .. prefix .. " - " .. suffix .. "|r")
     end
 end
 
@@ -366,6 +381,12 @@ local function UpdateBannerIcon(banner, data)
     if IconHandling and IconHandling.ApplyIcon then
         IconHandling.ApplyIcon(banner.icon, data)
     end
+
+    if IsCombatLocked() then
+        banner.nozmieNeedsSecureRefresh = true
+        return
+    end
+
     local ClickBehavior = GetClickBehavior()
     if ClickBehavior and ClickBehavior.ApplyActionAttributes then
         ClickBehavior.ApplyActionAttributes(banner, data)
@@ -373,7 +394,15 @@ local function UpdateBannerIcon(banner, data)
 end
 
 RefreshBannerDisplay = function(banner)
+    if not banner or not banner.options or not banner.currentIndex then
+        return
+    end
+
     local data = banner.options[banner.currentIndex]
+    if not data then
+        return
+    end
+
     banner.activeData = data
     UpdateBannerIcon(banner, data)
     local cooldown = Cooldowns.GetRemaining(data)
@@ -567,10 +596,16 @@ function BannerController.GetLastOptions()
 end
 
 _G.Nozmie_BannerController = BannerController
-BannerController.ApplyActionAttributes = function()
-    return GetClickBehavior() and GetClickBehavior().ApplyActionAttributes
+BannerController.ApplyActionAttributes = function(...)
+    local ClickBehavior = GetClickBehavior()
+    if ClickBehavior and ClickBehavior.ApplyActionAttributes then
+        return ClickBehavior.ApplyActionAttributes(...)
+    end
 end
-BannerController.ApplyClickBehavior = function()
-    return GetClickBehavior() and GetClickBehavior().Apply
+BannerController.ApplyClickBehavior = function(...)
+    local ClickBehavior = GetClickBehavior()
+    if ClickBehavior and ClickBehavior.Apply then
+        return ClickBehavior.Apply(...)
+    end
 end
 return BannerController
