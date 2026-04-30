@@ -107,6 +107,10 @@ end
 
 -- Find all matching utilities in a chat message
 function Detection.FindMatchingUtilities(message, sender)
+    if type(message) ~= "string" or message == "" then
+        return {}
+    end
+
     local Cooldowns = require("features.cooldowns")
     local Data = require("db.data")
     local Helpers = require("utils.helpers")

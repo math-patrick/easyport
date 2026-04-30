@@ -455,7 +455,11 @@ function Keystones.SendOwnedKeystoneToChannel(channel)
         message = "!nozmie none"
     end
     
-    C_ChatInfo.SendChatMessage(message, channel)
+    if C_ChatInfo and C_ChatInfo.SendChatMessage then
+        C_ChatInfo.SendChatMessage(message, channel)
+    else
+        SendChatMessage(message, channel)
+    end
 
     Keystones.RefreshOwnedKeystoneReport()
     

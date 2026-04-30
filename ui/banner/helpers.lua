@@ -22,9 +22,7 @@ function BannerHelpers.SaveBannerPosition(frame)
         point = point or "CENTER",
         relativePoint = relativePoint or "CENTER",
         xOfs = tonumber(xOfs) or 0,
-        yOfs = tonumber(yOfs) or 0,
-        width = frame:GetWidth() or 300,
-        height = frame:GetHeight() or 100
+        yOfs = tonumber(yOfs) or 0
     }
 
     if relativeTo and relativeTo ~= UIParent then
@@ -52,15 +50,6 @@ function BannerHelpers.LoadBannerPosition(frame)
         frame:ClearAllPoints()
         frame:SetPoint(point, UIParent, relativePoint, x, y)
 
-        local width = tonumber(position.width)
-        if width and width > 0 then
-            frame:SetWidth(width)
-        end
-
-        local height = tonumber(position.height)
-        if height and height > 0 then
-            frame:SetHeight(height)
-        end
         return
     end
 

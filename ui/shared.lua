@@ -54,6 +54,12 @@ end
 -- Click/action logic (was in BannerController)
 function SharedUI.ApplyActionAttributes(button, item)
     if not button or not item then return end
+    if InCombatLockdown and InCombatLockdown() then
+        button.nozmiePendingSharedActionData = item
+        return false
+    end
+
+    button.nozmiePendingSharedActionData = nil
     button:SetAttribute("type", nil)
     button:SetAttribute("type1", nil)
     button:SetAttribute("macrotext", nil)
@@ -90,6 +96,7 @@ function SharedUI.ApplyActionAttributes(button, item)
     button:SetAttribute("macrotext2", nil)
     button:SetAttribute("spell2", nil)
     button:SetAttribute("item2", nil)
+    return true
 end
 
 _G.Nozmie_SharedUI = SharedUI

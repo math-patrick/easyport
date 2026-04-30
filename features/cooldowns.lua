@@ -12,6 +12,41 @@ local Cooldowns = {}
 -- Minimum duration to be considered a real cooldown (filters out GCD ~1.5s)
 local GCD_THRESHOLD = 1.5
 
+local function getItemCooldown(itemID)
+    if not itemID then
+        return nil, nil
+    end
+
+    if C_Item and C_Item.GetItemCooldown then
+        return C_Item.GetItemCooldown(itemID)
+    end
+
+    if GetItemCooldown then
+        return GetItemCooldown(itemID)
+    end
+
+    return nil, nil
+end
+
+local function getSpellCooldown(spellID)
+    if not spellID then
+        return nil, nil
+    end
+
+    if C_Spell and C_Spell.GetSpellCooldown then
+        local info = C_Spell.GetSpellCooldown(spellID)
+        if info then
+            return info.startTime, info.duration
+        end
+    end
+
+    if GetSpellCooldown then
+        return GetSpellCooldown(spellID)
+    end
+
+    return nil, nil
+end
+
 -- Get remaining cooldown for a utility (spell, item, or both if applicable)
 function Cooldowns.GetRemaining(data)
     if not data then return 0 end
@@ -20,7 +55,7 @@ function Cooldowns.GetRemaining(data)
     
     -- Check preferred item first
     if data.preferItem and data.itemID then
-        local start, duration = C_Item.GetItemCooldown(data.itemID)
+        local start, duration = getItemCooldown(data.itemID)
         if start and duration and start > 0 and duration > GCD_THRESHOLD then
             remaining = start + duration - GetTime()
             if remaining > 0 then return remaining end
@@ -29,16 +64,16 @@ function Cooldowns.GetRemaining(data)
     
     -- Check spell cooldown (ignore GCD)
     if data.spellID then
-        local info = C_Spell.GetSpellCooldown(data.spellID)
-        if info and info.startTime and info.duration and info.startTime > 0 and info.duration > GCD_THRESHOLD then
-            remaining = info.startTime + info.duration - GetTime()
+        local start, duration = getSpellCooldown(data.spellID)
+        if start and duration and start > 0 and duration > GCD_THRESHOLD then
+            remaining = start + duration - GetTime()
             if remaining > 0 then return remaining end
         end
     end
     
     -- Check item cooldown
     if data.itemID then
-        local start, duration = C_Item.GetItemCooldown(data.itemID)
+        local start, duration = getItemCooldown(data.itemID)
         if start and duration and start > 0 and duration > GCD_THRESHOLD then
             remaining = start + duration - GetTime()
             if remaining > 0 then return remaining end
@@ -206,6 +241,10 @@ end
 
 -- Check if player can use a given utility (spell, item, pet, mount, etc.)
 function Cooldowns.CanPlayerUseUtility(data)
+    if type(data) ~= "table" then
+        return false
+    end
+
     if not canUseProfession(data) then
         return false
     end

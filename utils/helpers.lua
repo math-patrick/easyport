@@ -67,8 +67,10 @@ function Helpers.GetChannelFromEvent(event)
     
     if event == "CHAT_MSG_SAY" then
         return "SAY"
-    elseif event == "CHAT_MSG_PARTY" or event == "CHAT_MSG_PARTY_LEADER" or event == "CHAT_MSG_INSTANCE_CHAT" then
+    elseif event == "CHAT_MSG_PARTY" or event == "CHAT_MSG_PARTY_LEADER" then
         return "PARTY"
+    elseif event == "CHAT_MSG_INSTANCE_CHAT" then
+        return "INSTANCE_CHAT"
     elseif event == "CHAT_MSG_RAID" then
         return "RAID"
     elseif event == "CHAT_MSG_GUILD" then
@@ -100,22 +102,45 @@ function Helpers.SendChatMessage(message, event, sender)
         if not sender or sender == "" then
             return false
         end
-        C_ChatInfo.SendChatMessage(message, channel, nil, sender)
+        if C_ChatInfo and C_ChatInfo.SendChatMessage then
+            C_ChatInfo.SendChatMessage(message, channel, nil, sender)
+        else
+            SendChatMessage(message, channel, nil, sender)
+        end
         return true
     elseif channel == "BN_WHISPER" then
         if not sender or sender == "" then
             return false
         end
-        C_ChatInfo.SendAddonMessage(Constants.BN_WHISPER_PREFIX, message, "BN_WHISPER", sender)
-        return true
+        if C_ChatInfo and C_ChatInfo.SendAddonMessage then
+            C_ChatInfo.SendAddonMessage(Constants.BN_WHISPER_PREFIX, message, "BN_WHISPER", sender)
+            return true
+        end
+        return false
     else
         -- Validate channel
         if not Constants.VALID_CHAT_CHANNELS[channel] then
             channel = "SAY"
         end
-        C_ChatInfo.SendChatMessage(message, channel)
+        if C_ChatInfo and C_ChatInfo.SendChatMessage then
+            C_ChatInfo.SendChatMessage(message, channel)
+        else
+            SendChatMessage(message, channel)
+        end
         return true
     end
+end
+
+function Helpers.Trim(text)
+    if text == nil then
+        return ""
+    end
+
+    if strtrim then
+        return strtrim(tostring(text))
+    end
+
+    return tostring(text):match("^%s*(.-)%s*$") or ""
 end
 
 -- ============================================================================

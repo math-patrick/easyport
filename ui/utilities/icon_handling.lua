@@ -2,6 +2,42 @@ local ConfigHelpers = _G.Nozmie_ConfigHelpers
 
 local IconHandling = {}
 
+local function getItemCooldown(itemID)
+    if not itemID then
+        return 0, 0, 0
+    end
+
+    if C_Item and C_Item.GetItemCooldown then
+        return C_Item.GetItemCooldown(itemID)
+    end
+
+    if _G.GetItemCooldown then
+        return _G.GetItemCooldown(itemID)
+    end
+
+    return 0, 0, 0
+end
+
+local function getSpellCooldown(spellID)
+    if not spellID then
+        return 0, 0, 0
+    end
+
+    if C_Spell and C_Spell.GetSpellCooldown then
+        local info = C_Spell.GetSpellCooldown(spellID)
+        if info then
+            local enable = (info.enable ~= nil and info.enable) or ((info.isEnabled == false) and 0 or 1)
+            return info.startTime or 0, info.duration or 0, enable
+        end
+    end
+
+    if _G.GetSpellCooldown then
+        return _G.GetSpellCooldown(spellID)
+    end
+
+    return 0, 0, 0
+end
+
 function IconHandling.SetDesaturation(icon, isDesaturated)
     if icon and icon.SetDesaturated then
         icon:SetDesaturated(isDesaturated and true or false)
@@ -25,15 +61,10 @@ function IconHandling.GetActiveCooldown(data)
     end
 
     local start, duration, enable = 0, 0, 0
-    if data.itemID and C_Item and C_Item.GetItemCooldown then
-        start, duration, enable = C_Item.GetItemCooldown(data.itemID)
-    elseif data.spellID and C_Spell and C_Spell.GetSpellCooldown then
-        local info = C_Spell.GetSpellCooldown(data.spellID)
-        if info then
-            start = info.startTime or 0
-            duration = info.duration or 0
-            enable = (info.enable ~= nil and info.enable) or ((info.isEnabled == false) and 0 or 1)
-        end
+    if data.itemID then
+        start, duration, enable = getItemCooldown(data.itemID)
+    elseif data.spellID then
+        start, duration, enable = getSpellCooldown(data.spellID)
     end
 
     local remaining = 0
