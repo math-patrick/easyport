@@ -1,11 +1,12 @@
-libs\LibDBIcon-1.0.xml
-## Interface: 120000, 120001, 120005, 120007
+## Interface: 110207, 120000, 120001, 120005, 120007
 ## Title: Nozmie: Utility Helper
 ## Notes: Smart teleport and utility detection with player targeting. Auto-detects dungeon names and buff requests in chat.
 ## Author: Sabya
-## Version: 5.0.0
+## Version: 6.0.0
 ## SavedVariables: NozmieDB
 ## IconTexture: Interface\Icons\Spell_Holy_BorrowedTime
+
+libs\LibDBIcon-1.0.xml
 
 # ============================================================================
 # LAYER 1: Localization (must load early for Lstr functions)
