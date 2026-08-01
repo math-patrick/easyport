@@ -77,6 +77,7 @@ Hearthstones = {
     Hearth("Tome of Town Portal",                    142542),
     Hearth("Path of the Naaru",                      206195),
     Hearth("Redeployment Module",                    235016),
+    Hearth("Mycomancer's Hearthspore",               264367),
     -- Hearth("Naaru's Enfold",                      263489),
     -- Hearth("Draenic Hologem",                     210455),
 }
