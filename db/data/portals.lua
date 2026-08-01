@@ -288,6 +288,15 @@ TeleportToys = {{
     cooldown = "1 hour",
     destination = "Stormsong Valley",
     keywords = {"stormsong", "kul tiras"}
+}, {
+    name = "Lightveil Recall Beacon",
+    itemID = 276371,
+    spellName = "Lightveil Recall Beacon",
+    actionType = "toy",
+    category = "Teleport",
+    cooldown = "15 min",
+    destination = "Umbral Base Camp (Val/Naigtal)",
+    keywords = {"recall beacon"}
 }}
 
 DelveTeleports = {{
