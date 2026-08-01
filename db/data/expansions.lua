@@ -4,8 +4,7 @@ local WotLK = {{
     spellName = "Path of Unyielding Blight",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"pit of saron", "pit", "saron", "cu do sarão", "sauron", "pit of sauron"},
-    current = 1
+    keywords = {"pit of saron", "pit", "saron", "cu do sarão", "sauron", "pit of sauron"}
 }}
 
 local Cataclysm = {{
@@ -145,7 +144,6 @@ local Draenor = {{
     actionType = "spell",
     category = "M+ Dungeon",
     keywords = {"skyreach", "sky reach"},
-    current = 1,
     legacy = 1
 }, {
     name = "Skyreach",
@@ -153,8 +151,7 @@ local Draenor = {{
     spellName = "Path of the Crowning Pinnacle",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"skyreach", "sky reach"},
-    current = 1
+    keywords = {"skyreach", "sky reach"}
 }, {
     name = "Upper Blackrock Spire",
     spellID = 159902,
@@ -184,7 +181,8 @@ local Dragonflight = {{
     spellName = "Path of the Clutch Defender",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"ruby", "ruby life pools", "rlp", "life pools"}
+    keywords = {"ruby", "ruby life pools", "rlp", "life pools"},
+    current = 1
 }, {
     name = "The Nokhud Offensive",
     spellID = 393262,
@@ -205,8 +203,7 @@ local Dragonflight = {{
     spellName = "Path of the Draconic Diploma",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"algethar", "algeth'ar", "academy", "smartfit"},
-    current = 1
+    keywords = {"algethar", "algeth'ar", "academy", "smartfit"}
 }, {
     name = "Neltharus",
     spellID = 393276,
@@ -409,6 +406,22 @@ local BattleForAzeroth = {{
     actionType = "spell",
     category = "M+ Dungeon",
     keywords = {"siege of boralus", "boralus", "sob"}
+}, {
+    name = "Kings' Rest",
+    spellID = 1286831,
+    spellName = "Path of the Slumbering Conqueror",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"kings rest", "king's rest", "kr"},
+    current = 1
+}, {
+    name = "Temple of Sethraliss",
+    spellID = 1286828,
+    spellName = "Path of the Sacred Temple",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"temple of sethraliss", "sethraliss", "temple", "tos"},
+    current = 1
 }}
 
 local Legion = {{
@@ -459,8 +472,7 @@ local Legion = {{
     spellName = "Path of Dark Dereliction",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"seat", "triumvirate", "seat of the triumvirate", "sott"},
-    current = 1
+    keywords = {"seat", "triumvirate", "seat of the triumvirate", "sott"}
 }}
 
 local WarWithin = {{
@@ -556,31 +568,67 @@ local Midnight = {{
     spellName = "Path of Devoted Magistry",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"magisters", "magister's terrace", "terrace", "magister"},
-    current = 1
+    keywords = {"magisters", "magister's terrace", "terrace", "magister"}
 }, {
     name = "Windrunner Spire",
     spellID = 1254400,
     spellName = "Path of the Windrunners",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"windrunner", "spire", "windrunner spire"},
-    current = 1
+    keywords = {"windrunner", "spire", "windrunner spire"}
 }, {
     name = "Nexus-Point Xenas",
     spellID = 1254563,
     spellName = "Path of the Fractured Core",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"nexus-point", "xenas", "nexus point", "nexus johnsonn", "nexus p", "nexus"},
-    current = 1
+    keywords = {"nexus-point", "xenas", "nexus point", "nexus johnsonn", "nexus p", "nexus"}
 }, {
     name = "Maisara Caverns",
     spellID = 1254559,
     spellName = "Path of Cavernous Depths",
     actionType = "spell",
     category = "M+ Dungeon",
-    keywords = {"maisara", "maisara caverns", "caverna da maisa"},
+    keywords = {"maisara", "maisara caverns", "caverna da maisa"}
+}, {
+    name = "Altar of Fangs",
+    spellID = 1286812,
+    spellName = "Path of Venomous Evolution",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"altar of fangs", "altar", "fangs", "coiled isle"},
+    current = 1
+}, {
+    name = "Murder Row",
+    spellID = 1286809,
+    spellName = "Path of the Devious Smuggler",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"murder row", "murder"},
+    current = 1
+}, {
+    name = "Den of Nalorakk",
+    spellID = 1286807,
+    spellName = "Path of the Worthy Aspirant",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"den of nalorakk", "nalorakk", "den"},
+    current = 1
+}, {
+    name = "The Blinding Vale",
+    spellID = 1286801,
+    spellName = "Path of the Blooming Verdure",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"blinding vale", "vale"},
+    current = 1
+}, {
+    name = "Voidscar Arena",
+    spellID = 1286804,
+    spellName = "Path of the Brutal Combatant",
+    actionType = "spell",
+    category = "M+ Dungeon",
+    keywords = {"voidscar arena", "voidscar", "arena"},
     current = 1
 }}
 
