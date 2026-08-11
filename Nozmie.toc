@@ -1,4 +1,4 @@
-## Interface: 110207, 120000, 120001, 120005, 120007
+## Interface: 110207, 120000, 120001, 120005, 120007, 120100
 ## Title: Nozmie: Utility Helper
 ## Notes: Smart teleport and utility detection with player targeting. Auto-detects dungeon names and buff requests in chat.
 ## Author: Sabya
