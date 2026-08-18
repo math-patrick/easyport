@@ -78,6 +78,56 @@ function Favourites.SeedDefaultFavourites()
 end
 
 -- ============================================================================
+-- Seasonal Migration
+-- ============================================================================
+
+-- Bump this whenever the M+ Dungeon "current" pool rotates to a new season.
+local SEASON_DUNGEON_FAVOURITES_VERSION = 1
+
+-- Swap out stale M+ Dungeon favourites for the new season's pool. Runs once
+-- per season (tracked via a stored version), so it never fights a player's
+-- manual favourite changes made after the migration already ran.
+function Favourites.MigrateSeasonalDungeonFavourites()
+    State.InitializeDB()
+    local db = State.GetDB()
+    if not db or db.favouritesSeasonVersion == SEASON_DUNGEON_FAVOURITES_VERSION then
+        return
+    end
+
+    if type(_G.Nozmie_Data) == "table" then
+        local hadDungeonFavourite = false
+        local staleIDs = {}
+        local currentIDs = {}
+
+        for _, entry in ipairs(_G.Nozmie_Data) do
+            if entry and entry.category == "M+ Dungeon" then
+                local id = Favourites.GetEntryID(entry)
+                if id then
+                    if tonumber(entry.current) == 1 then
+                        table.insert(currentIDs, id)
+                    elseif Favourites.IsFavourite(id) then
+                        hadDungeonFavourite = true
+                        table.insert(staleIDs, id)
+                    end
+                end
+            end
+        end
+
+        for _, id in ipairs(staleIDs) do
+            State.RemoveFavourite(id)
+        end
+
+        if hadDungeonFavourite then
+            for _, id in ipairs(currentIDs) do
+                State.AddFavourite(id)
+            end
+        end
+    end
+
+    db.favouritesSeasonVersion = SEASON_DUNGEON_FAVOURITES_VERSION
+end
+
+-- ============================================================================
 -- Sorting
 -- ============================================================================
 

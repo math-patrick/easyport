@@ -15,6 +15,7 @@ local function GetBannerUI() return _G.Nozmie_BannerUI end
 local function GetBannerController() return _G.Nozmie_BannerController end
 local function GetSettings() return _G.Nozmie_Settings end
 local function GetMinimap() return _G.Nozmie_Minimap end
+local function GetUIFavourites() return _G.Nozmie_UIFavourites end
 
 local Locale = _G.Nozmie_Locale
 local function Lstr(key, fallback)
@@ -380,7 +381,13 @@ function Init.Initialize()
 
     -- Initialize state
     State.InitializeDB()
-    
+
+    -- Swap stale M+ Dungeon favourites for the current season's pool
+    local UIFavourites = GetUIFavourites()
+    if UIFavourites and UIFavourites.MigrateSeasonalDungeonFavourites then
+        UIFavourites.MigrateSeasonalDungeonFavourites()
+    end
+
     -- Initialize settings
     if Settings and Settings.InitializeDB then
         Settings.InitializeDB()
