@@ -40,14 +40,21 @@ end
 -- Get the aggregated dataset
 function Data.GetAllData()
     if not Data._cached then
-        Data._cached = AggregateData()
-        
-        -- Apply locale aliases if available
-        if _G.Nozmie_Locale and _G.Nozmie_Locale.ApplyKeywordAliases then
-            _G.Nozmie_Locale.ApplyKeywordAliases(Data._cached)
+        -- Data.lua (loaded earlier, Layer 2) already aggregates every source
+        -- and applies locale keyword aliases into the global Nozmie_Data
+        -- table. Reuse it instead of re-scanning every source and re-running
+        -- alias application a second time on every login/reload.
+        if type(_G.Nozmie_Data) == "table" then
+            Data._cached = _G.Nozmie_Data
+        else
+            Data._cached = AggregateData()
+
+            if _G.Nozmie_Locale and _G.Nozmie_Locale.ApplyKeywordAliases then
+                _G.Nozmie_Locale.ApplyKeywordAliases(Data._cached)
+            end
         end
     end
-    
+
     return Data._cached
 end
 

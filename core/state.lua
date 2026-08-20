@@ -116,46 +116,6 @@ function State.SetBannerPosition(point, relativePoint, xOfs, yOfs)
 end
 
 -- ============================================================================
--- Group Keys Management (tracked keystones from group)
--- ============================================================================
-
--- Get all currently tracked group member keystones
-function State.GetGroupKeys()
-    return NozmieDB and NozmieDB.groupKeys or {}
-end
-
--- Track a group member's keystone at a specific timestamp
-function State.SetGroupKey(sender, dungeonID, level, mapName, link)
-    State.InitializeDB()
-    if not sender or not dungeonID then return false end
-    
-    NozmieDB.groupKeys[sender] = {
-        dungeonID = dungeonID,
-        level = level or 0,
-        mapName = mapName,
-        link = link,
-        timestamp = GetTime()
-    }
-    return true
-end
-
--- Clear a specific group member's tracked keystone
-function State.ClearGroupKey(sender)
-    State.InitializeDB()
-    if NozmieDB.groupKeys[sender] then
-        NozmieDB.groupKeys[sender] = nil
-        return true
-    end
-    return false
-end
-
--- Clear all group member keystones (called when leaving group)
-function State.ClearAllGroupKeys()
-    State.InitializeDB()
-    NozmieDB.groupKeys = {}
-end
-
--- ============================================================================
 -- Favourites Management (saved utilities user likes)
 -- ============================================================================
 
@@ -186,37 +146,6 @@ end
 -- Check if utility is marked as favourite
 function State.IsFavourite(itemID)
     return NozmieDB and NozmieDB.favourites and NozmieDB.favourites[itemID] or false
-end
-
--- ============================================================================
--- Cooldowns Management (custom cooldown tracking)
--- ============================================================================
-
--- Get all tracked custom cooldowns
-function State.GetCooldowns()
-    return NozmieDB and NozmieDB.cooldowns or {}
-end
-
--- Set a custom cooldown with expiry time (for non-WoW cooldowns)
-function State.SetCooldown(key, expiryTime)
-    State.InitializeDB()
-    NozmieDB.cooldowns[key] = expiryTime
-end
-
--- Get a specific custom cooldown expiry time
-function State.GetCooldown(key)
-    if not NozmieDB or not NozmieDB.cooldowns then return nil end
-    return NozmieDB.cooldowns[key]
-end
-
--- Clear a custom cooldown
-function State.ClearCooldown(key)
-    State.InitializeDB()
-    if NozmieDB.cooldowns[key] then
-        NozmieDB.cooldowns[key] = nil
-        return true
-    end
-    return false
 end
 
 _G.Nozmie_State = State

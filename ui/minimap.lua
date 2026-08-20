@@ -228,4 +228,24 @@ function Nozmie_ToggleMinimapIcon()
     Minimap.UpdateVisibility()
 end
 
+-- ============================================================================
+-- Addon Compartment (available since patch 10.1.0)
+-- Gives players a second, more discoverable entry point next to the
+-- minimap icon; reuses the same click/tooltip behavior.
+-- ============================================================================
+
+function _G.Nozmie_OnAddonCompartmentClick(addonName, buttonName)
+    HandleClick(buttonName or "LeftButton")
+end
+
+function _G.Nozmie_OnAddonCompartmentEnter(addonName, menuButtonFrame)
+    GameTooltip:SetOwner(menuButtonFrame, "ANCHOR_LEFT")
+    ShowTooltip(menuButtonFrame, GameTooltip)
+    GameTooltip:Show()
+end
+
+function _G.Nozmie_OnAddonCompartmentLeave()
+    GameTooltip:Hide()
+end
+
 _G.Nozmie_Minimap = Minimap

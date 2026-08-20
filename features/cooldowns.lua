@@ -89,30 +89,57 @@ function Cooldowns.IsOnCooldown(data)
 end
 
 -- ============================================================================
--- Custom Cooldown Tracking
--- ============================================================================
-
--- Track a custom cooldown (for non-WoW managed cooldowns)
-function Cooldowns.Set(key, expiryTime)
-    local State = require("core.state")
-    State.SetCooldown(key, expiryTime)
-end
-
--- Get a custom cooldown
-function Cooldowns.Get(key)
-    local State = require("core.state")
-    return State.GetCooldown(key)
-end
-
--- Clear a custom cooldown
-function Cooldowns.Clear(key)
-    local State = require("core.state")
-    State.ClearCooldown(key)
-end
-
--- ============================================================================
 -- Utility Availability Checking
 -- ============================================================================
+
+-- ============================================================================
+-- Pet Journal Ownership Cache
+-- ============================================================================
+-- canUsePet() is called for every pet-type utility entry during panel
+-- rebuilds and chat detection. Scanning the whole pet journal every single
+-- call is wasteful, so the owned-pet name set is built once and invalidated
+-- only when the journal actually changes.
+
+local ownedPetNameCache
+local petCacheWatcher
+
+local function InvalidateOwnedPetCache()
+    ownedPetNameCache = nil
+end
+
+local function EnsurePetCacheWatcher()
+    if petCacheWatcher then
+        return
+    end
+    petCacheWatcher = CreateFrame("Frame")
+    petCacheWatcher:RegisterEvent("PET_JOURNAL_LIST_UPDATE")
+    petCacheWatcher:RegisterEvent("COMPANION_UPDATE")
+    petCacheWatcher:SetScript("OnEvent", InvalidateOwnedPetCache)
+end
+
+-- Set of lowercased names (journal name and custom name) for owned pets.
+local function GetOwnedPetNameSet()
+    if ownedPetNameCache then
+        return ownedPetNameCache
+    end
+
+    EnsurePetCacheWatcher()
+
+    local names = {}
+    local numPets = C_PetJournal.GetNumPets()
+    for i = 1, numPets do
+        local _, _, isOwned, customName, _, _, _, petNameFromJournal = C_PetJournal.GetPetInfoByIndex(i)
+        if isOwned then
+            local journalName = string.lower(tostring(petNameFromJournal or ""))
+            local journalCustomName = string.lower(tostring(customName or ""))
+            if journalName ~= "" then names[journalName] = true end
+            if journalCustomName ~= "" then names[journalCustomName] = true end
+        end
+    end
+
+    ownedPetNameCache = names
+    return names
+end
 
 -- Check if player has a specific pet
 local function canUsePet(data)
@@ -135,21 +162,8 @@ local function canUsePet(data)
         return false
     end
 
-    local numPets = C_PetJournal.GetNumPets()
-
-    for i = 1, numPets do
-        local _, speciesID, isOwned, customName, _, _, _, petNameFromJournal = C_PetJournal.GetPetInfoByIndex(i)
-        if isOwned then
-            if wantedSpeciesID and speciesID == wantedSpeciesID then
-                return true
-            end
-
-            local journalName = string.lower(tostring(petNameFromJournal or ""))
-            local journalCustomName = string.lower(tostring(customName or ""))
-            if journalName == wantedName or journalCustomName == wantedName then
-                return true
-            end
-        end
+    if GetOwnedPetNameSet()[wantedName] then
+        return true
     end
 
     if C_PetJournal.PetIsSummonable and C_PetJournal.FindPetIDByName then

@@ -184,15 +184,29 @@ function Helpers.EscapePattern(text)
     return (text:gsub("(%W)", "%%%1"))
 end
 
+-- Chat detection runs this on every monitored chat message against every
+-- keyword of every utility entry, so the compiled frontier-pattern for each
+-- keyword is cached instead of being rebuilt (gsub + concat) on every call.
+local keywordPatternCache = {}
+
+local function GetKeywordPattern(normalizedKeyword)
+    local pattern = keywordPatternCache[normalizedKeyword]
+    if pattern == nil then
+        pattern = "%f[%w]" .. Helpers.EscapePattern(normalizedKeyword) .. "%f[%W]"
+        keywordPatternCache[normalizedKeyword] = pattern
+    end
+    return pattern
+end
+
 function Helpers.MatchesKeyword(message, keyword)
     if not message or not keyword or keyword == "" then
         return false
     end
-    
+
     local normalizedMessage = message:lower()
     local normalizedKeyword = tostring(keyword):lower()
-    local pattern = "%f[%w]" .. Helpers.EscapePattern(normalizedKeyword) .. "%f[%W]"
-    
+    local pattern = GetKeywordPattern(normalizedKeyword)
+
     return normalizedMessage:find(pattern) ~= nil
 end
 

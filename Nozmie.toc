@@ -5,6 +5,9 @@
 ## Version: 6.0.0
 ## SavedVariables: NozmieDB
 ## IconTexture: Interface\Icons\Spell_Holy_BorrowedTime
+## AddonCompartmentFunc: Nozmie_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: Nozmie_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: Nozmie_OnAddonCompartmentLeave
 
 libs\LibDBIcon-1.0.xml
 

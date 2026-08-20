@@ -600,10 +600,14 @@ BuildDataCache = function()
         return
     end
     for _, item in ipairs(_G.Nozmie_Data) do
-        local isUsable = IsUsableUtility(item)
-        if (IsUtilityEntry(item) or IsTeleportEntry(item) or IsHearthstoneEntry(item)) and
-            (isUsable or (showAllEntries and not isUsable and ShouldShowUnavailableEntry(item))) then
-            table.insert(dataCache, item)
+        -- Check the cheap category membership first; only call into
+        -- IsUsableUtility (which can hit Pet Journal/Mount Journal/item
+        -- count APIs) for entries that could actually end up in the cache.
+        if IsUtilityEntry(item) or IsTeleportEntry(item) or IsHearthstoneEntry(item) then
+            local isUsable = IsUsableUtility(item)
+            if isUsable or (showAllEntries and ShouldShowUnavailableEntry(item)) then
+                table.insert(dataCache, item)
+            end
         end
     end
 
@@ -1188,9 +1192,13 @@ EnsureFrame = function()
         LayoutButtons()
     end)
 
+    -- Note: GROUP_ROSTER_UPDATE is intentionally not handled here. Every
+    -- change is already reported through core/main.lua's EventBus handler,
+    -- which calls Keystones.CleanupGroupKeyReportsForCurrentGroup() and then
+    -- UtilityUI.RefreshGroupKeys() (itself gated on the frame being shown).
+    -- Registering it a second time on this frame just duplicated that work.
     frame:RegisterEvent("PLAYER_REGEN_DISABLED")
     frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-    frame:RegisterEvent("GROUP_ROSTER_UPDATE")
     frame:RegisterEvent("PET_JOURNAL_LIST_UPDATE")
     frame:RegisterEvent("COMPANION_UPDATE")
     frame:RegisterEvent("NEW_TOY_ADDED")
@@ -1221,9 +1229,11 @@ EnsureFrame = function()
             return
         end
 
-        if event == "GROUP_ROSTER_UPDATE" then
-            Keystones.CleanupGroupKeyReportsForCurrentGroup()
-            RefreshDungeonIndicators(nil)
+        -- These fire whenever the pet journal/toy box changes, which can
+        -- happen often (loot, loading screens) and has nothing to do with
+        -- whether this panel is even open. Skip the full rebuild while
+        -- hidden; OnShow already rebuilds unconditionally on next open.
+        if not self:IsShown() then
             return
         end
 
